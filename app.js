@@ -16,6 +16,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const MISSION_DURATION_MS = 30000; // 30 secondi per la prova Scudo
+const SHIELD_IMG = "shield_3d.jpg";
 
 // =======================================================
 // 2. AUDIO NATIVO iOS / ANDROID (Web Audio API)
@@ -170,7 +171,7 @@ function getShuffledMissionDeck() {
 let state = {
   roomCode: localStorage.getItem('trd_room') || null,
   playerId: localStorage.getItem('trd_pid') || null,
-  selectedAvatar: '🎭',
+  selectedAvatar: 'king_3d.jpg',
   selectedVoteId: null,
   selectedNightTargetId: null,
   roleRevealedLocally: false,
@@ -183,6 +184,34 @@ let state = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+function escapeHtml(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function isImageAsset(val) {
+  return typeof val === 'string' && /\.(jpg|jpeg|png|webp)$/i.test(val);
+}
+
+function renderAvatarHtml(avatar, alt = 'Avatar', extraClass = '') {
+  if (isImageAsset(avatar)) {
+    return `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(alt)}" class="avatar-img ${extraClass}" />`;
+  }
+  return `<span class="${extraClass}">${escapeHtml(avatar || '👑')}</span>`;
+}
+
+function setContainerAvatar(el, avatar, alt = 'Avatar') {
+  if (!el) return;
+  if (isImageAsset(avatar)) {
+    el.innerHTML = `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(alt)}" class="avatar-img" />`;
+  } else {
+    el.textContent = avatar || '👑';
+  }
+}
 
 function showToast(msg) {
   const t = $('toast');
@@ -216,11 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
     $('roomCodeInput').value = inviteCode.toUpperCase().slice(0, 4);
   }
 
-  document.querySelectorAll('.avatar-opt').forEach(btn => {
+  document.querySelectorAll('.avatar-btn-3d').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.avatar-opt').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.avatar-btn-3d').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      state.selectedAvatar = btn.dataset.avatar;
+      state.selectedAvatar = btn.dataset.avatar || 'king_3d.jpg';
       playTone(520, 0.1);
     });
   });
@@ -506,8 +535,8 @@ function renderLobby(room, isHost) {
     li.className = 'player-item';
     li.innerHTML = `
       <div class="player-left">
-        <span>${p.avatar}</span>
-        <span>${p.name} ${id === room.meta.hostId ? '👑' : ''}</span>
+        <span class="player-avatar-slot">${renderAvatarHtml(p.avatar, p.name)}</span>
+        <span>${escapeHtml(p.name)} ${id === room.meta.hostId ? '👑' : ''}</span>
       </div>
       <span class="status-dot ${p.online ? '' : 'offline'}"></span>
     `;
@@ -772,8 +801,8 @@ function renderVotingPhase(room) {
     const currentSelected = me.votedFor || state.selectedVoteId;
     card.className = `vote-card ${currentSelected === id ? 'selected' : ''}`;
     card.innerHTML = `
-      <span class="v-avatar">${p.avatar}</span>
-      <span class="v-name">${p.name}</span>
+      <span class="vote-card-avatar">${renderAvatarHtml(p.avatar, p.name)}</span>
+      <span class="v-name">${escapeHtml(p.name)}</span>
     `;
     if (me.alive && !me.votedFor) {
       card.onclick = () => {
@@ -869,7 +898,7 @@ function renderExilePhase(room, isHost) {
   const info = room.meta.exiledInfo;
   if (!info) return;
 
-  $('exileAvatar').textContent = info.avatar;
+  setContainerAvatar($('exileAvatar'), info.avatar, info.name || 'Esiliato');
   const badge = $('exileRoleReveal');
 
   if (info.tie) {
@@ -924,8 +953,8 @@ function renderNightPhase(room) {
       const card = document.createElement('div');
       card.className = `vote-card ${state.selectedNightTargetId === id ? 'selected' : ''}`;
       card.innerHTML = `
-        <span class="v-avatar">${p.avatar}</span>
-        <span class="v-name">${p.name}</span>
+        <span class="vote-card-avatar">${renderAvatarHtml(p.avatar, p.name)}</span>
+        <span class="v-name">${escapeHtml(p.name)}</span>
       `;
       card.onclick = () => {
         state.selectedNightTargetId = id;
@@ -946,7 +975,7 @@ function renderNightPhase(room) {
       if (!p.alive || id === state.playerId) return;
       const chip = document.createElement('button');
       chip.className = 'decoy-chip';
-      chip.textContent = `${p.avatar} ${p.name}`;
+      chip.innerHTML = `${renderAvatarHtml(p.avatar, p.name, 'decoy-mini-avatar')} <span>${escapeHtml(p.name)}</span>`;
       chip.onclick = () => {
         document.querySelectorAll('.decoy-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
@@ -963,7 +992,7 @@ function renderTraitorChat(chatObj) {
   Object.values(chatObj).forEach(msg => {
     const div = document.createElement('div');
     div.className = 'chat-msg';
-    div.innerHTML = `<strong>${msg.from}:</strong> ${msg.text}`;
+    div.innerHTML = `<strong>${escapeHtml(msg.from)}:</strong> ${escapeHtml(msg.text)}`;
     box.appendChild(div);
   });
   box.scrollTop = box.scrollHeight;
@@ -1003,7 +1032,7 @@ async function submitNightAction() {
   } else if (protectedByShield) {
     updates[`rooms/${state.roomCode}/meta/morningInfo`] = {
       eliminated: false,
-      icon: '🛡️',
+      icon: SHIELD_IMG,
       title: 'Nessuno è stato eliminato!',
       text: 'I Traditori hanno colpito nell’ombra, ma lo Scudo segreto ha salvato la vittima!'
     };
@@ -1028,7 +1057,7 @@ function renderMorningPhase(room, isHost) {
   const info = room.meta.morningInfo;
   if (!info) return;
 
-  $('morningIcon').textContent = info.icon;
+  setContainerAvatar($('morningIcon'), info.icon, info.title || 'Alba');
   $('morningTitle').textContent = info.title;
   $('morningText').textContent = info.text;
 
@@ -1116,8 +1145,8 @@ function renderGameOverPhase(room, isHost) {
     li.className = 'player-item';
     li.innerHTML = `
       <div class="player-left">
-        <span>${p.avatar}</span>
-        <span>${p.name} ${p.alive ? '' : '(Eliminato)'}</span>
+        <span class="player-avatar-slot">${renderAvatarHtml(p.avatar, p.name)}</span>
+        <span>${escapeHtml(p.name)} ${p.alive ? '' : '(Eliminato)'}</span>
       </div>
       <span class="pill" style="color: ${isTraitor ? '#ff4d6d' : '#58a6ff'}; font-weight:700;">
         ${isTraitor ? 'TRADITORE' : 'FEDELE'}
