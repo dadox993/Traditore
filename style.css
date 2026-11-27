@@ -1,3 +1,447 @@
+/* =======================================================
+   1. VARIABILI E RESET GENERALE
+   ======================================================= */
+:root {
+  --bg-main: #0b0b0f;
+  --bg-card: #14141d;
+  --bg-card-elevated: #1b1b27;
+  --text-main: #f5f5f8;
+  --text-muted: #a2a2b5;
+  --gold: #d4af37;
+  --gold-bright: #f6e29c;
+  --crimson: #c9184a;
+  --crimson-bright: #ff4d6d;
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --border-gold: rgba(212, 175, 55, 0.35);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  min-height: 100%;
+  background: radial-gradient(circle at top, #181524 0%, var(--bg-main) 55%);
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* =======================================================
+   2. STRUTTURA APP & BARRA SUPERIORE
+   ======================================================= */
+.app-shell {
+  max-width: 540px;
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 84px;
+}
+
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: rgba(11, 11, 15, 0.88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  color: var(--gold);
+  font-size: 1.25rem;
+}
+
+.brand-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: var(--gold-bright);
+}
+
+.top-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.14);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =======================================================
+   3. SCHERMATE E CARD
+   ======================================================= */
+.screen-container {
+  flex: 1;
+  padding: 18px 16px 24px;
+}
+
+.screen {
+  display: none;
+  animation: fadeIn 0.25s ease;
+}
+
+.screen.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-card {
+  text-align: center;
+  padding: 20px 14px 24px;
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.hero-eyebrow {
+  line-height: 1.6;
+}
+
+h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: #ffffff;
+}
+
+h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+
+h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+h4 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.phase-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.form-card label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-elevated);
+  color: var(--text-main);
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+input[type="text"]:focus {
+  border-color: var(--gold);
+}
+
+#roomCodeInput {
+  margin-bottom: 0;
+  text-transform: uppercase;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.join-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.join-row .btn {
+  width: auto;
+  padding: 13px 22px;
+  white-space: nowrap;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 16px 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.divider span {
+  padding: 0 10px;
+}
+
+/* =======================================================
+   4. PULSANTI, BADGE E LISTE
+   ======================================================= */
+.btn {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-family: inherit;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.2s ease;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #120f07;
+}
+
+.btn-crimson {
+  background: linear-gradient(135deg, var(--crimson-bright), var(--crimson));
+  color: #ffffff;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+}
+
+.btn-small {
+  width: auto;
+  padding: 9px 14px;
+  font-size: 0.84rem;
+  border-radius: var(--radius-sm);
+}
+
+.pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-muted);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lobby-header {
+  text-align: center;
+}
+
+.code-display {
+  font-family: 'Cinzel', serif;
+  font-size: 2.3rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  color: var(--gold-bright);
+  margin: 6px 0 14px;
+}
+
+.player-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.player-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.player-avatar-slot {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 1.15rem;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2ecc71;
+}
+
+.status-dot.offline {
+  background: #6c7280;
+}
+
+/* =======================================================
+   5. CARTA IDENTITÀ SEGRETA & AVATAR RUOLO
+   ======================================================= */
+.role-card-wrapper {
+  margin: 12px 0 18px;
+}
+
+.secret-card {
+  min-height: 310px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, #1b1929 0%, #111118 100%);
+  border: 1px solid var(--border-gold);
+  padding: 24px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+}
+
+.secret-card.revealed-faithful {
+  border-color: rgba(88, 166, 255, 0.55);
+  box-shadow: 0 16px 36px rgba(88, 166, 255, 0.14);
+}
+
+.secret-card.revealed-traitor {
+  border-color: rgba(255, 77, 109, 0.65);
+  box-shadow: 0 16px 36px rgba(255, 77, 109, 0.2);
+}
+
+.crest {
+  font-size: 2.6rem;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.secret-card-front p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
 .role-avatar-frame {
   width: 128px;
   height: 128px;
@@ -21,8 +465,80 @@
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: #f6e29c;
+  color: var(--gold-bright);
   margin-bottom: 8px;
+}
+
+.role-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.revealed-faithful .role-tag {
+  background: rgba(88, 166, 255, 0.18);
+  color: #7cc0ff;
+}
+
+.revealed-traitor .role-tag {
+  background: rgba(255, 77, 109, 0.2);
+  color: var(--crimson-bright);
+}
+
+.ally-box {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 77, 109, 0.14);
+  border: 1px solid rgba(255, 77, 109, 0.4);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffb3c1;
+}
+
+/* =======================================================
+   6. MISSIONE SCUDO (DOMANDE CORTE 1 RIGA E LEGGIBILI)
+   ======================================================= */
+.mission-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.mission-timer-badge {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--gold-bright);
+}
+
+.mission-timer-badge.urgent {
+  color: var(--crimson-bright);
+}
+
+.timer-bar {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.timer-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  transition: width 0.2s linear;
+}
+
+.timer-fill.urgent {
+  background: linear-gradient(90deg, var(--crimson), var(--crimson-bright));
 }
 
 .single-line-question {
@@ -33,6 +549,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 16px;
 }
 
 @media (max-width: 480px) {
@@ -41,11 +558,255 @@
   }
 }
 
+.mission-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .mission-opt-btn {
+  width: 100%;
   font-size: 1.08rem !important;
   font-weight: 600 !important;
   line-height: 1.4 !important;
   padding: 15px 16px !important;
   min-height: 54px;
   text-align: left;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-elevated);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.mission-opt-btn.correct {
+  border-color: #2ecc71;
+  background: rgba(46, 204, 113, 0.18);
+}
+
+.mission-opt-btn.wrong {
+  border-color: var(--crimson-bright);
+  background: rgba(255, 77, 109, 0.18);
+}
+
+.mission-feedback {
+  margin-top: 14px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--gold-bright);
+}
+
+/* =======================================================
+   7. VOTO, ESILIO, NOTTE, ALBA, FINE PARTITA & BANNER
+   ======================================================= */
+.instruction-text {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.vote-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.vote-card {
+  padding: 14px 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.vote-card.selected {
+  border-color: var(--crimson-bright);
+  background: rgba(255, 77, 109, 0.14);
+}
+
+.vote-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 1.4rem;
+}
+
+.v-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.shield-banner {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.14);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.shield-inline-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.reveal-card {
+  text-align: center;
+  padding: 24px 18px;
+}
+
+.big-avatar {
+  width: 78px;
+  height: 78px;
+  margin: 12px auto;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  overflow: hidden;
+}
+
+.revealed-role-pill {
+  display: inline-block;
+  margin: 10px 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--gold-bright);
+}
+
+.text-crimson {
+  color: var(--crimson-bright);
+}
+
+.night-wait-card {
+  text-align: center;
+}
+
+.pulse-moon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+.decoy-box {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.decoy-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.decoy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-elevated);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.decoy-chip.active {
+  border-color: var(--gold);
+  background: rgba(212, 175, 55, 0.16);
+}
+
+.chat-messages {
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chat-msg {
+  font-size: 0.88rem;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-elevated);
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input-row input {
+  margin-bottom: 0;
+}
+
+.sticky-footer {
+  margin-top: 14px;
+}
+
+.wait-note {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin-top: 8px;
+}
+
+.spectator-banner {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 516px;
+  z-index: 25;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(25, 25, 38, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e4e4f0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.toast {
+  position: fixed;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #222230;
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
