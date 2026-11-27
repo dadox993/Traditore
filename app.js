@@ -15,6 +15,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+const MISSION_DURATION_MS = 30000; // 30 secondi per la prova Scudo
+
 // =======================================================
 // 2. AUDIO NATIVO iOS / ANDROID (Web Audio API)
 // =======================================================
@@ -173,6 +175,7 @@ let state = {
   selectedNightTargetId: null,
   roleRevealedLocally: false,
   missionAnswered: false,
+  missionTimerInterval: null,
   roomRef: null,
   secretRef: null,
   roomData: null,
@@ -263,7 +266,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('advanceToVotingBtn').addEventListener('click', () => {
-    db.ref(`rooms/${state.roomCode}/meta/phase`).set('VOTING');
+    clearInterval(state.missionTimerInterval);
+    db.ref(`rooms/${state.roomCode}/meta`).update({
+      phase: 'VOTING',
+      missionEndsAt: null
+    });
   });
 
   $('confirmVoteBtn').addEventListener('click', submitVote);
@@ -300,6 +307,7 @@ async function createRoom() {
       round: 1,
       missionDeck: getShuffledMissionDeck(),
       deckCursor: 0,
+      missionEndsAt: null,
       shieldWinnerId: null,
       exiledInfo: null,
       morningInfo: null,
@@ -395,6 +403,8 @@ function saveSessionAndListen(code, pid) {
 function clearSession() {
   if (state.roomRef) state.roomRef.off();
   if (state.secretRef) state.secretRef.off();
+  clearInterval(state.missionTimerInterval);
+  state.missionTimerInterval = null;
   localStorage.removeItem('trd_room');
   localStorage.removeItem('trd_pid');
   state.roomCode = null;
@@ -425,6 +435,11 @@ function renderCurrentPhase() {
   const { meta, players = {} } = room;
   const me = players[state.playerId];
   if (!me) return leaveRoom();
+
+  if (meta.phase !== 'MISSION') {
+    clearInterval(state.missionTimerInterval);
+    state.missionTimerInterval = null;
+  }
 
   const isHost = meta.hostId === state.playerId;
 
@@ -540,6 +555,7 @@ async function startGame() {
   updates[`rooms/${state.roomCode}/meta/round`] = 1;
   updates[`rooms/${state.roomCode}/meta/missionDeck`] = getShuffledMissionDeck();
   updates[`rooms/${state.roomCode}/meta/deckCursor`] = 0;
+  updates[`rooms/${state.roomCode}/meta/missionEndsAt`] = null;
 
   await db.ref().update(updates);
 }
@@ -587,14 +603,19 @@ function renderRoleCard() {
 }
 
 async function checkAllPlayersReadyForMission() {
-  const snap = await db.ref(`rooms/${state.roomCode}/players`).get();
-  const players = Object.values(snap.val() || {});
+  const snap = await db.ref(`rooms/${state.roomCode}`).get();
+  const room = snap.val();
+  if (!room) return;
+  const players = Object.values(room.players || {});
   if (players.every(p => p.ready)) {
-    await db.ref(`rooms/${state.roomCode}/meta/phase`).set('MISSION');
+    await db.ref(`rooms/${state.roomCode}/meta`).update({
+      phase: 'MISSION',
+      missionEndsAt: Date.now() + MISSION_DURATION_MS
+    });
   }
 }
 
-// --- MISSIONE SCUDO ---
+// --- MISSIONE SCUDO (30s TIMER) ---
 function getCurrentMission(room) {
   const deck = room.meta.missionDeck || getShuffledMissionDeck();
   const cursor = room.meta.deckCursor || 0;
@@ -632,7 +653,7 @@ function renderMissionPhase(room, isHost) {
         playTone(isCorrect ? 680 : 210, 0.25);
 
         const elapsed = Date.now() - startTime;
-        const score = isCorrect ? Math.max(100, 10000 - elapsed) : 0;
+        const score = isCorrect ? Math.max(100, MISSION_DURATION_MS - elapsed) : 0;
 
         $('missionFeedback').textContent = isCorrect
           ? 'Risposta esatta! Attendi gli altri giocatori...'
@@ -645,9 +666,56 @@ function renderMissionPhase(room, isHost) {
       optionsDiv.appendChild(btn);
     });
   }
+
+  startMissionCountdown(room.meta.missionEndsAt, isHost);
 }
 
-async function evaluateMissionCompletion() {
+function startMissionCountdown(endsAt, isHost) {
+  clearInterval(state.missionTimerInterval);
+  const targetEnd = endsAt || (Date.now() + MISSION_DURATION_MS);
+
+  const updateTick = () => {
+    const remainingMs = Math.max(0, targetEnd - Date.now());
+    const secondsLeft = Math.ceil(remainingMs / 1000);
+    const pct = Math.max(0, Math.min(100, (remainingMs / MISSION_DURATION_MS) * 100));
+
+    const badge = $('missionTimerText');
+    const fill = $('missionTimerFill');
+    if (badge) {
+      badge.textContent = `${secondsLeft}s`;
+      badge.classList.toggle('urgent', secondsLeft <= 6);
+    }
+    if (fill) {
+      fill.style.width = `${pct}%`;
+      fill.classList.toggle('urgent', secondsLeft <= 6);
+    }
+
+    if (remainingMs <= 0) {
+      clearInterval(state.missionTimerInterval);
+      state.missionTimerInterval = null;
+      handleMissionTimeout(isHost);
+    }
+  };
+
+  updateTick();
+  state.missionTimerInterval = setInterval(updateTick, 200);
+}
+
+async function handleMissionTimeout(isHost) {
+  const me = state.roomData?.players?.[state.playerId];
+  if (me && me.alive && !state.missionAnswered && (me.missionScore === null || me.missionScore === undefined)) {
+    state.missionAnswered = true;
+    $('missionFeedback').textContent = 'Tempo scaduto! Nessun punto Scudo per questo round.';
+    $('missionFeedback').classList.remove('hidden');
+    await db.ref(`rooms/${state.roomCode}/players/${state.playerId}/missionScore`).set(0);
+  }
+
+  if (isHost) {
+    evaluateMissionCompletion(true);
+  }
+}
+
+async function evaluateMissionCompletion(forceFinish = false) {
   const snap = await db.ref(`rooms/${state.roomCode}`).get();
   const room = snap.val();
   if (!room || room.meta.phase !== 'MISSION') return;
@@ -655,12 +723,15 @@ async function evaluateMissionCompletion() {
   const aliveEntries = Object.entries(room.players || {}).filter(([, p]) => p.alive);
   const allAnswered = aliveEntries.every(([, p]) => p.missionScore !== null && p.missionScore !== undefined);
 
-  if (allAnswered) {
+  if (allAnswered || forceFinish) {
+    clearInterval(state.missionTimerInterval);
+    state.missionTimerInterval = null;
+
     let bestId = null;
     let bestScore = 0;
     aliveEntries.forEach(([id, p]) => {
-      if (p.missionScore > bestScore) {
-        bestScore = p.missionScore;
+      if ((p.missionScore || 0) > bestScore) {
+        bestScore = p.missionScore || 0;
         bestId = id;
       }
     });
@@ -670,6 +741,7 @@ async function evaluateMissionCompletion() {
       updates[`rooms/${state.roomCode}/secrets/${id}/hasShield`] = (id === bestId);
     });
     updates[`rooms/${state.roomCode}/meta/shieldWinnerId`] = bestId;
+    updates[`rooms/${state.roomCode}/meta/missionEndsAt`] = null;
     updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
     await db.ref().update(updates);
   }
@@ -981,6 +1053,7 @@ async function startNextRound() {
     [`rooms/${state.roomCode}/meta/round`]: nextRound,
     [`rooms/${state.roomCode}/meta/deckCursor`]: nextCursor,
     [`rooms/${state.roomCode}/meta/shieldWinnerId`]: null,
+    [`rooms/${state.roomCode}/meta/missionEndsAt`]: Date.now() + MISSION_DURATION_MS,
     [`rooms/${state.roomCode}/meta/phase`]: 'MISSION'
   };
 
@@ -1061,6 +1134,7 @@ async function resetToLobby() {
   const updates = {
     [`rooms/${state.roomCode}/meta/phase`]: 'LOBBY',
     [`rooms/${state.roomCode}/meta/round`]: 1,
+    [`rooms/${state.roomCode}/meta/missionEndsAt`]: null,
     [`rooms/${state.roomCode}/meta/shieldWinnerId`]: null,
     [`rooms/${state.roomCode}/meta/exiledInfo`]: null,
     [`rooms/${state.roomCode}/meta/morningInfo`]: null,
@@ -1076,4 +1150,4 @@ async function resetToLobby() {
   });
 
   await db.ref().update(updates);
-      }
+        }
