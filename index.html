@@ -122,11 +122,17 @@
         <div class="phase-header">
           <span class="eyebrow">ROUND <span class="round-num">1</span> • PROVA IMMUNITÀ</span>
           <h2>Missione per lo Scudo</h2>
-          <p class="subtitle">Chi risponde bene e più in fretta ottiene lo Scudo segreto per stanotte.</p>
+          <p class="subtitle">Hai 30 secondi: chi risponde bene e più in fretta ottiene lo Scudo segreto per stanotte.</p>
         </div>
 
         <div class="card mission-card">
-          <span id="missionCategoryTag" class="pill" style="margin-bottom: 10px; display: inline-block;">LOGICA</span>
+          <div class="mission-top-row">
+            <span id="missionCategoryTag" class="pill">LOGICA</span>
+            <span id="missionTimerText" class="mission-timer-badge">30s</span>
+          </div>
+          <div class="timer-bar">
+            <div id="missionTimerFill" class="timer-fill"></div>
+          </div>
           <h3 id="missionQuestion" class="mission-question">Caricamento missione...</h3>
           <div id="missionOptions" class="mission-options"></div>
           <p id="missionFeedback" class="mission-feedback hidden"></p>
