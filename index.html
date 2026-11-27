@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b0b0f" />
+  <title>IL TRADITORE — Multiplayer Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <!-- Barra Superiore -->
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-icon">♛</span>
+        <span class="brand-title">IL TRADITORE</span>
+      </div>
+      <div class="top-controls">
+        <span id="roomBadge" class="room-badge hidden">STANZA: ----</span>
+        <button id="soundToggleBtn" class="icon-btn" aria-label="Audio">🔊</button>
+        <button id="leaveBtn" class="icon-btn hidden" aria-label="Esci">✕</button>
+      </div>
+    </header>
+
+    <!-- Contenitore Schermate -->
+    <main id="screenContainer" class="screen-container">
+
+      <!-- 1. HOME / ACCESSO -->
+      <section id="screen-home" class="screen active">
+        <div class="hero-card">
+          <p class="eyebrow">GIOCO DI DEDUZIONE E INGANNO • 3–10 GIOCATORI</p>
+          <h1>Fidati di nessuno.<br/>Sopravvivi alla notte.</h1>
+          <p class="subtitle">Collegatevi tutti dal vostro smartphone. Scoprite chi si nasconde nell'ombra prima che sia troppo tardi.</p>
+        </div>
+
+        <div class="card form-card">
+          <label for="playerNameInput">Il tuo Nome in gioco</label>
+          <input type="text" id="playerNameInput" maxlength="16" placeholder="Es. Davide" autocomplete="off" />
+
+          <div class="avatar-picker" id="avatarPicker">
+            <button type="button" class="avatar-opt selected" data-avatar="🎭">🎭</button>
+            <button type="button" class="avatar-opt" data-avatar="👑">👑</button>
+            <button type="button" class="avatar-opt" data-avatar="🗡️">🗡️</button>
+            <button type="button" class="avatar-opt" data-avatar="🕯️">🕯️</button>
+            <button type="button" class="avatar-opt" data-avatar="🦊">🦊</button>
+            <button type="button" class="avatar-opt" data-avatar="🐍">🐍</button>
+            <button type="button" class="avatar-opt" data-avatar="🦉">🦉</button>
+            <button type="button" class="avatar-opt" data-avatar="🐺">🐺</button>
+          </div>
+
+          <button id="createRoomBtn" class="btn btn-gold">Crea Nuova Stanza</button>
+
+          <div class="divider"><span>OPPURE ENTRA CON UN CODICE</span></div>
+
+          <div class="join-row">
+            <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODICE" autocomplete="off" />
+            <button id="joinRoomBtn" class="btn btn-outline">Entra</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. LOBBY -->
+      <section id="screen-lobby" class="screen">
+        <div class="card lobby-header">
+          <span class="eyebrow">CODICE STANZA DA CONDIVIDERE</span>
+          <div class="code-display" id="lobbyCodeDisplay">----</div>
+          <button id="copyInviteBtn" class="btn btn-small btn-outline">Copia / Condividi Invito</button>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h3>Giocatori Connessi (<span id="playerCount">0</span>/10)</h3>
+            <span class="pill" id="rolePreviewBadge">In attesa...</span>
+          </div>
+          <ul id="lobbyPlayerList" class="player-list"></ul>
+        </div>
+
+        <div id="hostLobbyControls" class="sticky-footer hidden">
+          <button id="startGameBtn" class="btn btn-gold" disabled>Servono almeno 3 giocatori</button>
+        </div>
+        <div id="guestLobbyWait" class="sticky-footer hidden">
+          <p class="wait-note">In attesa che l'organizzatore avvii la partita...</p>
+        </div>
+      </section>
+
+      <!-- 3. RIVELAZIONE RUOLO -->
+      <section id="screen-role" class="screen">
+        <div class="phase-header">
+          <span class="eyebrow">IDENTITÀ SEGRETA</span>
+          <h2>Guarda solo tu lo schermo</h2>
+        </div>
+
+        <div class="role-card-wrapper">
+          <div id="secretRoleCard" class="secret-card">
+            <div class="secret-card-front">
+              <div class="crest">♛</div>
+              <h3>TOCCA PER SCOPRIRE IL TUO RUOLO</h3>
+              <p>Assicurati che nessuno stia sbirciando il tuo telefono</p>
+            </div>
+            <div id="secretRoleBack" class="secret-card-back hidden">
+              <span id="roleBadgeType" class="role-tag">FEDELE</span>
+              <h2 id="roleTitle">SEI UN FEDELE</h2>
+              <p id="roleDescription">Scova i Traditori ed esiliali alla Tavola Rotonda prima che prendano il controllo.</p>
+              <div id="fellowTraitorBox" class="ally-box hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sticky-footer">
+          <button id="confirmRoleBtn" class="btn btn-gold hidden">Ho capito, sono pronto</button>
+          <p id="roleReadyCounter" class="wait-note">Pronti: 0/0</p>
+        </div>
+      </section>
+
+      <!-- 4. MISSIONE SCUDO -->
+      <section id="screen-mission" class="screen">
+        <div class="phase-header">
+          <span class="eyebrow">ROUND <span class="round-num">1</span> • PROVA IMMUNITÀ</span>
+          <h2>Missione per lo Scudo</h2>
+          <p class="subtitle">Chi risponde bene e più in fretta ottiene lo Scudo segreto per stanotte.</p>
+        </div>
+
+        <div class="card mission-card">
+          <span id="missionCategoryTag" class="pill" style="margin-bottom: 10px; display: inline-block;">LOGICA</span>
+          <h3 id="missionQuestion" class="mission-question">Caricamento missione...</h3>
+          <div id="missionOptions" class="mission-options"></div>
+          <p id="missionFeedback" class="mission-feedback hidden"></p>
+        </div>
+
+        <div id="hostMissionNext" class="sticky-footer hidden">
+          <button id="advanceToVotingBtn" class="btn btn-outline">Passa subito alla Tavola Rotonda</button>
+        </div>
+      </section>
+
+      <!-- 5. TAVOLA ROTONDA (DISCUSSIONE E VOTO) -->
+      <section id="screen-voting" class="screen">
+        <div class="phase-header">
+          <span class="eyebrow">ROUND <span class="round-num">1</span> • TAVOLA ROTONDA</span>
+          <h2>Chi è il Traditore?</h2>
+          <p id="shieldStatusBanner" class="shield-banner hidden">🛡️ Hai vinto lo Scudo! Stanotte sei protetto.</p>
+        </div>
+
+        <div class="card">
+          <p class="instruction-text">Discutete a voce, poi tocca il giocatore che vuoi esiliare:</p>
+          <div id="votingGrid" class="vote-grid"></div>
+        </div>
+
+        <div class="sticky-footer">
+          <button id="confirmVoteBtn" class="btn btn-crimson" disabled>Conferma Voto</button>
+          <p id="voteProgressText" class="wait-note">Voti registrati: 0/0</p>
+        </div>
+      </section>
+
+      <!-- 6. ESILIO -->
+      <section id="screen-exile" class="screen">
+        <div class="card reveal-card">
+          <span class="eyebrow">VERDETTO DELLA TAVOLA ROTONDA</span>
+          <div id="exileAvatar" class="big-avatar">🎭</div>
+          <h2 id="exileAnnouncement">---</h2>
+          <div id="exileRoleReveal" class="revealed-role-pill">ERA UN FEDELE</div>
+          <p id="exileSubtext" class="subtitle"></p>
+        </div>
+
+        <div id="hostExileNext" class="sticky-footer hidden">
+          <button id="startNightBtn" class="btn btn-crimson">Cala la Notte</button>
+        </div>
+        <div id="guestExileWait" class="sticky-footer hidden">
+          <p class="wait-note">In attesa che cali la notte...</p>
+        </div>
+      </section>
+
+      <!-- 7. FASE NOTTE -->
+      <section id="screen-night" class="screen">
+        <div id="nightTraitorView" class="hidden">
+          <div class="phase-header">
+            <span class="eyebrow text-crimson">CONCLAVE DEI TRADITORI</span>
+            <h2 id="nightTraitorTitle">Scegli chi eliminare</h2>
+            <p id="nightTraitorDesc" class="subtitle">Se la vittima possiede lo Scudo, sopravviverà fino all'alba.</p>
+          </div>
+
+          <div class="card">
+            <div id="nightTargetGrid" class="vote-grid"></div>
+          </div>
+
+          <div id="traitorChatBox" class="card chat-card hidden">
+            <h4>Chat Segreta Complici</h4>
+            <div id="traitorMessages" class="chat-messages"></div>
+            <div class="chat-input-row">
+              <input type="text" id="traitorChatInput" placeholder="Scrivi al tuo complice..." maxlength="80" />
+              <button id="sendTraitorChatBtn" class="btn btn-small btn-crimson">Invia</button>
+            </div>
+          </div>
+
+          <div class="sticky-footer">
+            <button id="confirmNightKillBtn" class="btn btn-crimson" disabled>Conferma Mossa Notturna</button>
+          </div>
+        </div>
+
+        <div id="nightFaithfulView" class="hidden">
+          <div class="card night-wait-card">
+            <div class="pulse-moon">🌑</div>
+            <h2>La notte è calata...</h2>
+            <p class="subtitle">I Traditori stanno tramando nell'ombra. Per non far capire chi sta usando il telefono, rispondi al sondaggio segreto qui sotto:</p>
+            <div class="decoy-box">
+              <p class="eyebrow">SONDAGGIO ALIBI (SOLO PER TENERE LE MANI OCCUPATE)</p>
+              <p id="decoyQuestion">Chi ha parlato in modo più sospetto alla Tavola Rotonda?</p>
+              <div id="decoyOptions" class="decoy-grid"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. ALBA -->
+      <section id="screen-morning" class="screen">
+        <div class="card reveal-card">
+          <span class="eyebrow">L'ALBA DEL NUOVO GIORNO</span>
+          <div id="morningIcon" class="big-avatar">🕯️</div>
+          <h2 id="morningTitle">---</h2>
+          <div id="morningRoleBadge" class="revealed-role-pill hidden"></div>
+          <p id="morningText" class="subtitle"></p>
+        </div>
+
+        <div id="hostMorningNext" class="sticky-footer hidden">
+          <button id="nextRoundBtn" class="btn btn-gold">Inizia Nuovo Round</button>
+        </div>
+        <div id="guestMorningWait" class="sticky-footer hidden">
+          <p class="wait-note">In attesa del prossimo round...</p>
+        </div>
+      </section>
+
+      <!-- 9. FINE PARTITA -->
+      <section id="screen-gameover" class="screen">
+        <div class="card reveal-card">
+          <span class="eyebrow">PARTITA TERMINATA</span>
+          <div id="winnerIcon" class="big-avatar">🏆</div>
+          <h1 id="winnerHeadline">VINCONO I FEDELI!</h1>
+          <p id="winnerSummary" class="subtitle"></p>
+        </div>
+
+        <div class="card">
+          <h3>Rivelazione Completa dei Ruoli</h3>
+          <ul id="finalRolesList" class="player-list"></ul>
+        </div>
+
+        <div id="hostGameOverControls" class="sticky-footer hidden">
+          <button id="playAgainBtn" class="btn btn-gold">Gioca Ancora con lo Stesso Gruppo</button>
+        </div>
+      </section>
+
+      <!-- Banner Spettro -->
+      <div id="spectatorBanner" class="spectator-banner hidden">
+        👻 Sei uno Spettro: osservi tutto in silenzio senza poter votare o parlare.
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
