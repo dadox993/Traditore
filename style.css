@@ -1,0 +1,664 @@
+:root {
+  --bg-dark: #09090d;
+  --bg-card: #13131b;
+  --bg-elevated: #1c1c28;
+  --gold: #d4af37;
+  --gold-soft: rgba(212, 175, 55, 0.16);
+  --crimson: #c81d38;
+  --crimson-soft: rgba(200, 29, 56, 0.2);
+  --faithful: #2d7ff9;
+  --text-main: #f5f5f7;
+  --text-muted: #9b9ba8;
+  --border: rgba(255, 255, 255, 0.08);
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+}
+
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+/* Top Bar */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(9, 9, 13, 0.9);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  color: var(--gold);
+  font-size: 1.2rem;
+}
+
+.brand-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-size: 1rem;
+  color: var(--gold);
+}
+
+.top-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-badge {
+  background: var(--gold-soft);
+  color: var(--gold);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.icon-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* Screens */
+.screen-container {
+  flex: 1;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  animation: fadeIn 0.28s ease;
+}
+
+.screen.active {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography & Cards */
+h1, h2, h3 {
+  font-family: 'Cinzel', serif;
+  line-height: 1.25;
+}
+
+.eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.text-crimson { color: #ff4d6d; }
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.hero-card {
+  text-align: center;
+  padding: 12px 4px;
+}
+
+.hero-card h1 {
+  font-size: 1.65rem;
+  margin-bottom: 8px;
+}
+
+/* Forms (16px font-size prevents iOS Safari auto-zoom) */
+label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+input[type="text"] {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 13px 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus {
+  border-color: var(--gold);
+}
+
+#roomCodeInput {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Avatar Picker */
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  margin: 14px 0 18px;
+}
+
+.avatar-opt {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 0;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.avatar-opt.selected {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  transform: scale(1.06);
+}
+
+/* Buttons */
+.btn {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.2s;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #e5c158, #b88d1e);
+  color: #0b0b0f;
+}
+
+.btn-crimson {
+  background: linear-gradient(135deg, #d92341, #991127);
+  color: #fff;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  width: auto;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 18px 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
+
+.divider span {
+  padding: 0 10px;
+}
+
+.join-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 10px;
+}
+
+/* Lobby */
+.lobby-header {
+  text-align: center;
+}
+
+.code-display {
+  font-family: 'Cinzel', serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  margin: 6px 0 12px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pill {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+.player-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elevated);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.player-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2ecc71;
+}
+
+.status-dot.offline {
+  background: #666;
+}
+
+/* Secret Role Card */
+.role-card-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 290px;
+}
+
+.secret-card {
+  width: 100%;
+  min-height: 280px;
+  border-radius: 20px;
+  border: 2px solid var(--gold);
+  background: radial-gradient(circle at top, #1f1c2e, #0f0f15);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+  transition: transform 0.25s, border-color 0.3s;
+}
+
+.secret-card.revealed-traitor {
+  border-color: var(--crimson);
+  background: radial-gradient(circle at top, #380d16, #11090c);
+}
+
+.secret-card.revealed-faithful {
+  border-color: var(--faithful);
+  background: radial-gradient(circle at top, #102542, #0b0f17);
+}
+
+.crest {
+  font-size: 3rem;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.role-tag {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+}
+
+.revealed-traitor .role-tag {
+  background: var(--crimson);
+  color: #fff;
+}
+
+.revealed-faithful .role-tag {
+  background: var(--faithful);
+  color: #fff;
+}
+
+.ally-box {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(200, 29, 56, 0.22);
+  border: 1px solid rgba(255, 77, 109, 0.4);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Mission */
+.mission-question {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.05rem;
+  margin-bottom: 16px;
+}
+
+.mission-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mission-opt-btn {
+  text-align: left;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 13px 14px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.mission-opt-btn.correct {
+  border-color: #2ecc71;
+  background: rgba(46, 204, 113, 0.16);
+}
+
+.mission-opt-btn.wrong {
+  border-color: var(--crimson);
+  background: var(--crimson-soft);
+}
+
+.mission-feedback {
+  margin-top: 14px;
+  font-size: 0.88rem;
+  color: var(--gold);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Voting & Target Grid */
+.shield-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--gold-soft);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.instruction-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.vote-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.vote-card {
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.vote-card.selected {
+  border-color: var(--crimson);
+  background: var(--crimson-soft);
+}
+
+.vote-card .v-avatar {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.vote-card .v-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+/* Reveal & Night */
+.reveal-card, .night-wait-card {
+  text-align: center;
+  padding: 26px 18px;
+}
+
+.big-avatar {
+  font-size: 3.4rem;
+  margin: 10px 0;
+}
+
+.revealed-role-pill {
+  display: inline-block;
+  margin: 12px 0;
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+.revealed-role-pill.traitor {
+  background: var(--crimson);
+  color: #fff;
+}
+
+.revealed-role-pill.faithful {
+  background: var(--faithful);
+  color: #fff;
+}
+
+.pulse-moon {
+  font-size: 3.2rem;
+  margin-bottom: 12px;
+  animation: pulse 2.2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+.decoy-box {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.decoy-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.decoy-chip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 7px 12px;
+  border-radius: 99px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.decoy-chip.active {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Traitor Chat */
+.chat-card h4 {
+  font-size: 0.85rem;
+  color: #ff4d6d;
+  margin-bottom: 8px;
+}
+
+.chat-messages {
+  max-height: 110px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 0.84rem;
+}
+
+.chat-msg {
+  background: var(--bg-elevated);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Footer & Helpers */
+.sticky-footer {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.wait-note {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.spectator-banner {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222230;
+  color: #fff;
+  border: 1px solid var(--gold);
+  padding: 10px 18px;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 99;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.hidden {
+  display: none !important;
+}
