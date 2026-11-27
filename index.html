@@ -44,39 +44,6 @@
           <label for="playerNameInput">Il tuo Nome in gioco</label>
           <input type="text" id="playerNameInput" maxlength="16" placeholder="Es. Davide" autocomplete="off" />
 
-          <div class="avatar-picker-3d" id="avatarPicker">
-            <button type="button" class="avatar-btn-3d selected" data-avatar="king_3d.jpg" title="Re">
-              <img src="king_3d.jpg" alt="Re" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="queen_3d.jpg" title="Regina">
-              <img src="queen_3d.jpg" alt="Regina" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="hunter_3d.jpg" title="Cacciatore">
-              <img src="hunter_3d.jpg" alt="Cacciatore" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="peasant_3d.jpg" title="Contadino">
-              <img src="peasant_3d.jpg" alt="Contadino" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="traitor_3d.jpg" title="Traditore">
-              <img src="traitor_3d.jpg" alt="Traditore" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="priest_3d.jpg" title="Prete">
-              <img src="priest_3d.jpg" alt="Prete" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="judge.png" title="Giudice">
-              <img src="judge.png" alt="Giudice" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="court.jpg" title="Meretrice">
-              <img src="court.jpg" alt="Meretrice" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="teacher_3d.jpg" title="Maestra">
-              <img src="teacher_3d.jpg" alt="Maestra" />
-            </button>
-            <button type="button" class="avatar-btn-3d" data-avatar="kni.jpg" title="Cavaliere">
-              <img src="kni.jpg" alt="Cavaliere" />
-            </button>
-          </div>
-
           <button id="createRoomBtn" class="btn btn-gold">Crea Nuova Stanza</button>
 
           <div class="divider"><span>OPPURE ENTRA CON UN CODICE</span></div>
@@ -123,10 +90,12 @@
           <div id="secretRoleCard" class="secret-card">
             <div class="secret-card-front">
               <div class="crest">♛</div>
-              <h3>TOCCA PER SCOPRIRE IL TUO RUOLO</h3>
+              <h3>TOCCA PER SCOPRIRE LA TUA IDENTITÀ</h3>
               <p>Assicurati che nessuno stia sbirciando il tuo telefono</p>
             </div>
             <div id="secretRoleBack" class="secret-card-back hidden">
+              <div id="roleAvatarBox" class="role-avatar-frame"></div>
+              <div id="rolePersonaLabel" class="role-persona-label"></div>
               <span id="roleBadgeType" class="role-tag">FEDELE</span>
               <h2 id="roleTitle">SEI UN FEDELE</h2>
               <p id="roleDescription">Scova i Traditori ed esiliali alla Tavola Rotonda prima che prendano il controllo.</p>
@@ -146,18 +115,18 @@
         <div class="phase-header">
           <span class="eyebrow">ROUND <span class="round-num">1</span> • PROVA IMMUNITÀ</span>
           <h2>Missione per lo Scudo</h2>
-          <p class="subtitle">Hai 30 secondi: chi risponde bene e più in fretta ottiene lo Scudo segreto per stanotte.</p>
+          <p class="subtitle">30 secondi: rispondi bene e veloce per vincere lo Scudo segreto.</p>
         </div>
 
         <div class="card mission-card">
           <div class="mission-top-row">
-            <span id="missionCategoryTag" class="pill">LOGICA</span>
+            <span id="missionCategoryTag" class="pill">CULTURA</span>
             <span id="missionTimerText" class="mission-timer-badge">30s</span>
           </div>
           <div class="timer-bar">
             <div id="missionTimerFill" class="timer-fill"></div>
           </div>
-          <h3 id="missionQuestion" class="mission-question">Caricamento missione...</h3>
+          <h3 id="missionQuestion" class="mission-question single-line-question">Caricamento missione...</h3>
           <div id="missionOptions" class="mission-options"></div>
           <p id="missionFeedback" class="mission-feedback hidden"></p>
         </div>
@@ -171,7 +140,7 @@
       <section id="screen-voting" class="screen">
         <div class="phase-header">
           <span class="eyebrow">ROUND <span class="round-num">1</span> • TAVOLA ROTONDA</span>
-          <h2>Chi è il Traditore?</h2>
+          <h2>Chi vuoi esiliare?</h2>
           <p id="shieldStatusBanner" class="shield-banner hidden">
             <img src="shield_3d.jpg" alt="Scudo" class="shield-inline-img" />
             <span>Hai vinto lo Scudo! Stanotte sei protetto.</span>
@@ -193,9 +162,9 @@
       <section id="screen-exile" class="screen">
         <div class="card reveal-card">
           <span class="eyebrow">VERDETTO DELLA TAVOLA ROTONDA</span>
-          <div id="exileAvatar" class="big-avatar">👑</div>
+          <div id="exileAvatar" class="big-avatar">🎭</div>
           <h2 id="exileAnnouncement">---</h2>
-          <div id="exileRoleReveal" class="revealed-role-pill">ERA UN FEDELE</div>
+          <div id="exileRoleReveal" class="revealed-role-pill">IDENTITÀ SEGRETA FINO ALLA FINE</div>
           <p id="exileSubtext" class="subtitle"></p>
         </div>
 
@@ -238,9 +207,9 @@
           <div class="card night-wait-card">
             <div class="pulse-moon">🌑</div>
             <h2>La notte è calata...</h2>
-            <p class="subtitle">I Traditori stanno tramando nell'ombra. Per non far capire chi sta usando il telefono, rispondi al sondaggio segreto qui sotto:</p>
+            <p class="subtitle">I Traditori stanno tramando nell'ombra. Rispondi al sondaggio alibi per tenere le mani impegnate:</p>
             <div class="decoy-box">
-              <p class="eyebrow">SONDAGGIO ALIBI (SOLO PER TENERE LE MANI OCCUPATE)</p>
+              <p class="eyebrow">SONDAGGIO ALIBI</p>
               <p id="decoyQuestion">Chi ha parlato in modo più sospetto alla Tavola Rotonda?</p>
               <div id="decoyOptions" class="decoy-grid"></div>
             </div>
@@ -276,7 +245,7 @@
         </div>
 
         <div class="card">
-          <h3>Rivelazione Completa dei Ruoli</h3>
+          <h3>Rivelazione Completa dei Ruoli e Personaggi</h3>
           <ul id="finalRolesList" class="player-list"></ul>
         </div>
 
