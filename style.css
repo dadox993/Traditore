@@ -426,7 +426,51 @@ input[type="text"]:focus {
   font-weight: 600;
 }
 
-/* Mission */
+/* Mission & 30s Timer */
+.mission-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.mission-timer-badge {
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+
+.mission-timer-badge.urgent {
+  color: #ff4d6d;
+  background: var(--crimson-soft);
+  border-color: rgba(255, 77, 109, 0.45);
+}
+
+.timer-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.timer-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #e5c158, #b88d1e);
+  transition: width 0.2s linear;
+}
+
+.timer-fill.urgent {
+  background: linear-gradient(90deg, #ff4d6d, #c81d38);
+}
+
 .mission-question {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 1.05rem;
