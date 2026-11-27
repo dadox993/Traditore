@@ -15,8 +15,26 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const MISSION_DURATION_MS = 30000; // 30 secondi per la prova Scudo
+const MISSION_DURATION_MS = 30000;
 const SHIELD_IMG = "shield_3d.jpg";
+const ANON_AVATAR = "🎭";
+
+const TRAITOR_PERSONA = {
+  avatar: "traditore.jpeg",
+  label: "TRADITORE"
+};
+
+const FAITHFUL_PERSONAS = [
+  { avatar: "re.jpeg", label: "Re" },
+  { avatar: "regina.jpeg", label: "Regina" },
+  { avatar: "prete.jpeg", label: "Prete" },
+  { avatar: "cacciatore.jpeg", label: "Cacciatore" },
+  { avatar: "contadino.jpeg", label: "Contadino" },
+  { avatar: "giudice.jpeg", label: "Giudice" },
+  { avatar: "meretrice.jpeg", label: "Meretrice" },
+  { avatar: "maestra.jpeg", label: "Maestra" },
+  { avatar: "cavaliere.jpeg", label: "Cavaliere" }
+];
 
 // =======================================================
 // 2. AUDIO NATIVO iOS / ANDROID (Web Audio API)
@@ -39,121 +57,220 @@ function playTone(freq = 440, duration = 0.25, type = 'sine') {
     gain.connect(audioCtx.destination);
     osc.start();
     osc.stop(audioCtx.currentTime + duration);
-  } catch (e) { /* Ignora restrizioni autoplay prima del tocco */ }
+  } catch (e) { /* Ignora restrizioni autoplay */ }
 }
 
 // =======================================================
-// 3. MAZZO DI 18 MISSIONI SCUDO (MESCOLATE A OGNI PARTITA)
+// 3. MAZZO DI 200 MISSIONI SCUDO (BREVE, 1 RIGA)
 // =======================================================
 const SHIELD_MISSIONS = [
-  {
-    cat: "LOGICA",
-    q: "Un Traditore mente sempre il lunedì, martedì e mercoledì. Un Fedele mente solo il giovedì. Oggi entrambi dicono: «Ieri ho mentito». Che giorno è oggi?",
-    options: ["Giovedì", "Lunedì", "Domenica", "Venerdì"],
-    answer: 0
-  },
-  {
-    cat: "DEDUZIONE",
-    q: "Sul tavolo ci sono 3 scrigni: Oro, Argento e Bronzo. Solo uno contiene lo Scudo. L'etichetta su Oro dice «Non è qui», su Argento dice «È in Bronzo». Solo una frase è vera. Dov'è lo Scudo?",
-    options: ["Nello scrigno d'Oro", "Nello scrigno d'Argento", "Nello scrigno di Bronzo", "In nessuno dei tre"],
-    answer: 0
-  },
-  {
-    cat: "SEQUENZA",
-    q: "Completa la sequenza segreta della Tavola Rotonda: 2, 6, 12, 20, 30, ...",
-    options: ["42", "36", "40", "44"],
-    answer: 0
-  },
-  {
-    cat: "ENIGMA",
-    q: "Se 5 candidati impiegano 5 minuti per decifrare 5 codici, quanti minuti impiegano 10 candidati per decifrare 10 codici?",
-    options: ["5 minuti", "10 minuti", "1 minuto", "25 minuti"],
-    answer: 0
-  },
-  {
-    cat: "STRATEGIA",
-    q: "Hai una candela che brucia in esattamente 1 ora, ma non brucia a velocità uniforme. Come misuri 30 minuti esatti?",
-    options: ["Accendi entrambe le estremità: finirà in 30 min", "La spegni e riaccendi a metà", "Non è possibile misurarli", "La dividi ad occhio in due"],
-    answer: 0
-  },
-  {
-    cat: "MATEMATICA",
-    q: "Un pugnale e un fodero costano insieme 110 monete d'oro. Il pugnale costa 100 monete in più del fodero. Quanto costa il fodero?",
-    options: ["5 monete", "10 monete", "1 moneta", "15 monete"],
-    answer: 0
-  },
-  {
-    cat: "LOGICA",
-    q: "In una stanza ci sono 3 interruttori fuori da una porta chiusa. Dietro ci sono 3 lampade. Puoi aprire la porta una sola volta. Come fai?",
-    options: ["Accendi il 1° per 5 min, lo spegni, accendi il 2° ed entri", "Accendi tutti e tre insieme", "Apri la porta senza toccarli", "Ne accendi due per 10 secondi"],
-    answer: 0
-  },
-  {
-    cat: "INDOVINELLO",
-    q: "Più ne togli, più diventa grande. Cos'è?",
-    options: ["Un buco", "Un debito", "Un'ombra", "Un segreto"],
-    answer: 0
-  },
-  {
-    cat: "MEMORIA & ATTENZIONE",
-    q: "Quale di queste parole NON compare mai nell'intestazione del gioco «IL TRADITORE»?",
-    options: ["Castello", "Fidati", "Notte", "Smartphone"],
-    answer: 0
-  },
-  {
-    cat: "DEDUZIONE",
-    q: "Tre amici hanno ciascuno un cappello: Rosso, Blu o Nero. Nessuno vede il proprio. Il 1° dice: «Non so il mio». Il 2° dice: «Neanche io». Il 3° dice: «Il mio è Rosso!». Com'è possibile?",
-    options: ["I primi due avevano cappelli non-Rossi o hanno dedotto per esclusione", "Il 3° ha sbirciato", "Tutti e tre avevano il cappello Rosso", "Era una bugia"],
-    answer: 0
-  },
-  {
-    cat: "CULTURA POP",
-    q: "Nel celebre gioco da tavolo di deduzione sociale «Lupus in Tabula» / «Werewolf», chi agisce solitamente di notte?",
-    options: ["I Lupi Mannari", "Solo il Narratore", "I Villici armati", "Nessuno"],
-    answer: 0
-  },
-  {
-    cat: "SEQUENZA",
-    q: "Quale numero viene dopo nella serie: 1, 1, 2, 3, 5, 8, 13, ...?",
-    options: ["21", "18", "20", "16"],
-    answer: 0
-  },
-  {
-    cat: "PSICOLOGIA DEL GIOCO",
-    q: "Alla Tavola Rotonda un giocatore che non ha quasi mai parlato accusa all'improvviso qualcun altro senza prove. Qual è la mossa più razionale per un Fedele?",
-    options: ["Osservare chi lo appoggia subito e fare domande", "Votarlo subito senza ascoltare", "Fidarsi ciecamente di lui", "Uscire dalla stanza"],
-    answer: 0
-  },
-  {
-    cat: "ENIGMA",
-    q: "Ho città ma non case, montagne ma non alberi, acqua ma non pesci, strade ma non auto. Cosa sono?",
-    options: ["Una mappa", "Un sogno", "Un quadro", "Un libro"],
-    answer: 0
-  },
-  {
-    cat: "LOGICA",
-    q: "Se oggi è mercoledì, che giorno della settimana sarà tra 100 giorni?",
-    options: ["Venerdì", "Mercoledì", "Sabato", "Domenica"],
-    answer: 0
-  },
-  {
-    cat: "DEDUZIONE",
-    q: "Quattro sospettati sono in fila. Marco è davanti a Giulia, Luca è dietro Giulia ma davanti a Sara. Chi è il primo della fila?",
-    options: ["Marco", "Giulia", "Luca", "Sara"],
-    answer: 0
-  },
-  {
-    cat: "MATEMATICA",
-    q: "In un gruppo di 6 persone, ognuno stringe la mano a tutti gli altri esattamente una volta. Quante strette di mano avvengono in totale?",
-    options: ["15", "12", "30", "6"],
-    answer: 0
-  },
-  {
-    cat: "INTUITO",
-    q: "Quale elemento è l'intruso tra questi quattro?",
-    options: ["Pugnale", "Veleno", "Scudo", "Segreto"],
-    answer: 2
-  }
+  // 1-50: CULTURA GENERALE
+  { cat: "CULTURA", q: "Qual è la capitale del Giappone?", options: ["Tokyo", "Kyoto", "Osaka", "Seoul"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti colori ha l'arcobaleno?", options: ["7", "5", "6", "8"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è l'oceano più grande del mondo?", options: ["Pacifico", "Atlantico", "Indiano", "Artico"], answer: 0 },
+  { cat: "CULTURA", q: "In quale città si trova il Colosseo?", options: ["Roma", "Milano", "Napoli", "Firenze"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la lingua più parlata al mondo per madrelingua?", options: ["Cinese mandarino", "Spagnolo", "Inglese", "Arabo"], answer: 0 },
+  { cat: "CULTURA", q: "Quale animale è il simbolo del WWF?", options: ["Panda gigante", "Tigre", "Elefante", "Lupo"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti tasti ha un pianoforte standard?", options: ["88", "76", "92", "64"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la moneta del Regno Unito?", options: ["Sterlina", "Euro", "Dollaro", "Franco"], answer: 0 },
+  { cat: "CULTURA", q: "In quale paese si trova Machu Picchu?", options: ["Perù", "Cile", "Bolivia", "Colombia"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è il metallo più prezioso tra questi?", options: ["Oro", "Rame", "Ferro", "Alluminio"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti giocatori ha una squadra di calcio in campo?", options: ["11", "10", "9", "12"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale della Francia?", options: ["Parigi", "Lione", "Marsiglia", "Nizza"], answer: 0 },
+  { cat: "CULTURA", q: "Quale sport si gioca a Wimbledon?", options: ["Tennis", "Golf", "Cricket", "Rugby"], answer: 0 },
+  { cat: "CULTURA", q: "Quante stelle ha la bandiera dell'UE?", options: ["12", "10", "15", "27"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è l'isola più grande del Mediterraneo?", options: ["Sicilia", "Sardegna", "Creta", "Cipro"], answer: 0 },
+  { cat: "CULTURA", q: "Quale strumento misura i terremoti?", options: ["Sismografo", "Barometro", "Igrometro", "Anemometro"], answer: 0 },
+  { cat: "CULTURA", q: "In quale città italiana c'è Piazza San Marco?", options: ["Venezia", "Verona", "Torino", "Genova"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è il continente più popolato?", options: ["Asia", "Africa", "Europa", "America"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti giorni ha un anno bisestile?", options: ["366", "365", "364", "360"], answer: 0 },
+  { cat: "CULTURA", q: "Quale frutta dà origine all'uva passa?", options: ["Uva", "Fico", "Prugna", "Dattero"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale della Spagna?", options: ["Madrid", "Barcellona", "Siviglia", "Valencia"], answer: 0 },
+  { cat: "CULTURA", q: "Quale animale è noto per cambiare colore?", options: ["Camaleonte", "Geco", "Iguana", "Salamandra"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti minuti ha un'ora?", options: ["60", "100", "30", "90"], answer: 0 },
+  { cat: "CULTURA", q: "Quale fiume attraversa Londra?", options: ["Tamigi", "Senna", "Danubio", "Reno"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale della Germania?", options: ["Berlino", "Monaco", "Amburgo", "Francoforte"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti anelli ha il logo olimpico?", options: ["5", "4", "6", "7"], answer: 0 },
+  { cat: "CULTURA", q: "Quale paese ha forma di stivale?", options: ["Italia", "Grecia", "Portogallo", "Croazia"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è il mammifero terrestre più veloce?", options: ["Ghepardo", "Leone", "Gazzella", "Cavallo"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale della Grecia?", options: ["Atene", "Salonicco", "Spalta", "Patrasso"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti lati ha un esagono?", options: ["6", "5", "7", "8"], answer: 0 },
+  { cat: "CULTURA", q: "Quale mare bagna la costa adriatica?", options: ["Mare Adriatico", "Mar Nero", "Mar Rosso", "Mar Baltico"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale del Portogallo?", options: ["Lisbona", "Porto", "Faro", "Coimbra"], answer: 0 },
+  { cat: "CULTURA", q: "Quale uccello non sa volare?", options: ["Pinguino", "Aquila", "Gabbiano", "Rondine"], answer: 0 },
+  { cat: "CULTURA", q: "In quale stagione cadono le foglie?", options: ["Autunno", "Estate", "Primavera", "Inverno"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è il deserto caldo più grande del mondo?", options: ["Sahara", "Gobi", "Kalahari", "Atacama"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale dell'Egitto?", options: ["Il Cairo", "Alessandria", "Luxor", "Giza"], answer: 0 },
+  { cat: "CULTURA", q: "Quanti mesi ha un anno?", options: ["12", "10", "11", "13"], answer: 0 },
+  { cat: "CULTURA", q: "Quale spezia è ricavata dai fiori del croco?", options: ["Zafferano", "Curcuma", "Cannella", "Cardamomo"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale della Svizzera?", options: ["Berna", "Zurigo", "Ginevra", "Basilea"], answer: 0 },
+  { cat: "CULTURA", q: "Quale strumento ha sei corde di solito?", options: ["Chitarra", "Violino", "Arpa", "Contrabbasso"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è l'animale più grande del pianeta?", options: ["Balenottera azzurra", "Elefante africano", "Squalo balena", "Giraffa"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale dell'Austria?", options: ["Vienna", "Salisburgo", "Graz", "Innsbruck"], answer: 0 },
+  { cat: "CULTURA", q: "Quante corde ha un violino standard?", options: ["4", "5", "6", "3"], answer: 0 },
+  { cat: "CULTURA", q: "Quale città è famosa per il carnevale in Brasile?", options: ["Rio de Janeiro", "San Paolo", "Brasilia", "Recife"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è il metallo liquido a temperatura ambiente?", options: ["Mercurio", "Piombo", "Stagno", "Zinco"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale del Canada?", options: ["Ottawa", "Toronto", "Vancouver", "Montreal"], answer: 0 },
+  { cat: "CULTURA", q: "Quale pianta produce i chicchi di caffè?", options: ["Coffea", "Cacao", "Tè", "Vaniglia"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è il punto cardinale opposto a Nord?", options: ["Sud", "Est", "Ovest", "Nord-Est"], answer: 0 },
+  { cat: "CULTURA", q: "Quale città è chiamata la Serenissima?", options: ["Venezia", "Bologna", "Pisa", "Siena"], answer: 0 },
+  { cat: "CULTURA", q: "Quale paese ha come capitale Oslo?", options: ["Norvegia", "Svezia", "Finlandia", "Danimarca"], answer: 0 },
+
+  // 51-100: MATEMATICA
+  { cat: "MATEMATICA", q: "Quanto fa 12 × 12?", options: ["144", "124", "132", "148"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 15 + 28?", options: ["43", "42", "45", "33"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 100 - 37?", options: ["63", "73", "53", "67"], answer: 0 },
+  { cat: "MATEMATICA", q: "Qual è la radice quadrata di 81?", options: ["9", "8", "7", "6"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 9 × 7?", options: ["63", "56", "72", "64"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 144 ÷ 12?", options: ["12", "14", "11", "16"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto vale 2 alla quarta potenza (2⁴)?", options: ["16", "8", "12", "32"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 25% di 200?", options: ["50", "25", "75", "40"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 8 × 8 + 6?", options: ["70", "64", "72", "68"], answer: 0 },
+  { cat: "MATEMATICA", q: "Qual è il perimetro di un quadrato di lato 5?", options: ["20", "25", "10", "15"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 18 × 5?", options: ["90", "80", "95", "100"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 75 + 75?", options: ["150", "140", "160", "125"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 200 - 85?", options: ["115", "125", "105", "135"], answer: 0 },
+  { cat: "MATEMATICA", q: "Qual è il doppio di 46?", options: ["92", "82", "96", "86"], answer: 0 },
+  { cat: "MATEMATICA", q: "Qual è la metà di 150?", options: ["75", "70", "80", "65"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 11 × 11?", options: ["121", "111", "131", "101"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 6 × 9?", options: ["54", "48", "56", "63"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 81 ÷ 9?", options: ["9", "8", "7", "11"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 3³ (3 alla terza)?", options: ["27", "9", "18", "81"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 50% di 90?", options: ["45", "40", "50", "35"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 14 + 19 + 7?", options: ["40", "38", "42", "36"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 1000 - 450?", options: ["550", "650", "450", "500"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 7 × 12?", options: ["84", "74", "96", "72"], answer: 0 },
+  { cat: "MATEMATICA", q: "Qual è la radice quadrata di 64?", options: ["8", "6", "7", "9"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 13 × 3?", options: ["39", "36", "42", "33"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 90 ÷ 3?", options: ["30", "20", "40", "25"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 16 + 24?", options: ["40", "30", "44", "38"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 10 × 10 × 10?", options: ["1000", "100", "30", "10000"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 45 - 18?", options: ["27", "23", "29", "37"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 4 × 15?", options: ["60", "55", "65", "50"], answer: 0 },
+  { cat: "MATEMATICA", q: "Qual è il numero successivo a 999?", options: ["1000", "1001", "900", "1100"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 120 ÷ 4?", options: ["30", "25", "35", "40"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 19 + 31?", options: ["50", "40", "60", "49"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 5 × 17?", options: ["85", "75", "80", "90"], answer: 0 },
+  { cat: "MATEMATICA", q: "Qual è la radice quadrata di 100?", options: ["10", "20", "5", "25"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 200 ÷ 5?", options: ["40", "50", "25", "45"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 36 + 64?", options: ["100", "90", "110", "96"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 8 × 11?", options: ["88", "80", "98", "78"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 72 - 27?", options: ["45", "55", "35", "49"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 10% di 300?", options: ["30", "3", "60", "10"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 21 × 2?", options: ["42", "44", "32", "41"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 60 + 80?", options: ["140", "120", "150", "130"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 56 ÷ 7?", options: ["8", "7", "6", "9"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 12 + 13 + 15?", options: ["40", "35", "45", "30"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 9 × 9?", options: ["81", "72", "90", "89"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 150 - 65?", options: ["85", "95", "75", "80"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 3 × 25?", options: ["75", "70", "80", "65"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 48 ÷ 6?", options: ["8", "6", "7", "9"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 28 + 32?", options: ["60", "50", "70", "58"], answer: 0 },
+  { cat: "MATEMATICA", q: "Quanto fa 11 × 7?", options: ["77", "67", "87", "70"], answer: 0 },
+
+  // 101-150: STORIA
+  { cat: "STORIA", q: "In che anno cadde il Muro di Berlino?", options: ["1989", "1991", "1985", "1979"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il primo re d'Italia unita?", options: ["Vittorio Emanuele II", "Umberto I", "Camillo Cavour", "Giuseppe Garibaldi"], answer: 0 },
+  { cat: "STORIA", q: "In che anno l'uomo sbarcò sulla Luna?", options: ["1969", "1965", "1972", "1959"], answer: 0 },
+  { cat: "STORIA", q: "Chi dipinse la Gioconda?", options: ["Leonardo da Vinci", "Michelangelo", "Raffaello", "Donatello"], answer: 0 },
+  { cat: "STORIA", q: "Quale civiltà costruì le piramidi di Giza?", options: ["Egizi", "Sumeri", "Fenici", "Assiri"], answer: 0 },
+  { cat: "STORIA", q: "In che secolo visse Giulio Cesare?", options: ["I secolo a.C.", "I secolo d.C.", "III secolo a.C.", "V secolo a.C."], answer: 0 },
+  { cat: "STORIA", q: "Quale evento segnò l'inizio della Seconda Guerra Mondiale?", options: ["Invasione della Polonia", "Attacco a Pearl Harbor", "Battaglia di Stalingrado", "Sbarco in Normandia"], answer: 0 },
+  { cat: "STORIA", q: "Chi guidò la spedizione dei Mille?", options: ["Giuseppe Garibaldi", "Giuseppe Mazzini", "Camillo Cavour", "Vittorio Emanuele II"], answer: 0 },
+  { cat: "STORIA", q: "In che anno Cristoforo Colombo arrivò in America?", options: ["1492", "1482", "1502", "1498"], answer: 0 },
+  { cat: "STORIA", q: "Quale città fu distrutta dall'eruzione del 79 d.C.?", options: ["Pompei", "Siracusa", "Ravenna", "Ostia"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il primo presidente degli Stati Uniti?", options: ["George Washington", "Abraham Lincoln", "Thomas Jefferson", "John Adams"], answer: 0 },
+  { cat: "STORIA", q: "In che anno iniziò la Prima Guerra Mondiale?", options: ["1914", "1918", "1912", "1915"], answer: 0 },
+  { cat: "STORIA", q: "Quale imperatore romano fece costruire il Vallo?", options: ["Adriano", "Traiano", "Nerone", "Augusto"], answer: 0 },
+  { cat: "STORIA", q: "In quale anno l'Italia divenne una Repubblica?", options: ["1946", "1948", "1945", "1950"], answer: 0 },
+  { cat: "STORIA", q: "Chi scolpì il David di marmo a Firenze?", options: ["Michelangelo", "Bernini", "Canova", "Cellini"], answer: 0 },
+  { cat: "STORIA", q: "Quale popolo fondò Roma secondo la leggenda?", options: ["Romani / Latini", "Etruschi", "Greci", "Sabini"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu l'ultima regina d'Egitto ellenistico?", options: ["Cleopatra", "Nefertiti", "Hatshepsut", "Arsinoe"], answer: 0 },
+  { cat: "STORIA", q: "In che anno terminò la Seconda Guerra Mondiale?", options: ["1945", "1944", "1946", "1943"], answer: 0 },
+  { cat: "STORIA", q: "Quale navigatore compì il primo giro del mondo?", options: ["Magellano", "Vasco da Gama", "Amerigo Vespucci", "Marco Polo"], answer: 0 },
+  { cat: "STORIA", q: "Dove si svolse la battaglia decisiva contro Napoleone?", options: ["Waterloo", "Austerlitz", "Lipsia", "Marengo"], answer: 0 },
+  { cat: "STORIA", q: "Chi scrisse La Divina Commedia?", options: ["Dante Alighieri", "Francesco Petrarca", "Giovanni Boccaccio", "Ludovico Ariosto"], answer: 0 },
+  { cat: "STORIA", q: "Quale città era la capitale dell'Impero Romano d'Oriente?", options: ["Costantinopoli", "Alessandria", "Antiochia", "Atene"], answer: 0 },
+  { cat: "STORIA", q: "In che anno entrò in vigore la Costituzione Italiana?", options: ["1948", "1946", "1947", "1951"], answer: 0 },
+  { cat: "STORIA", q: "Chi inventò la stampa a caratteri mobili in Europa?", options: ["Johannes Gutenberg", "Galileo Galilei", "Isaac Newton", "Blaise Pascal"], answer: 0 },
+  { cat: "STORIA", q: "Quale trattato pose fine alla Prima Guerra Mondiale?", options: ["Trattato di Versailles", "Trattato di Roma", "Pace di Westfalia", "Trattato di Parigi"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il celebre condottiero cartaginese delle Alpi?", options: ["Annibale", "Scipione", "Pirro", "Spartaco"], answer: 0 },
+  { cat: "STORIA", q: "In che secolo avvenne la Rivoluzione Francese?", options: ["XVIII secolo", "XVII secolo", "XIX secolo", "XVI secolo"], answer: 0 },
+  { cat: "STORIA", q: "Quale filosofo greco fu maestro di Alessandro Magno?", options: ["Aristotele", "Socrate", "Platone", "Pitagora"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il primo uomo nello spazio?", options: ["Jurij Gagarin", "Neil Armstrong", "Buzz Aldrin", "Alan Shepard"], answer: 0 },
+  { cat: "STORIA", q: "In quale città si tenne il processo di Norimberga?", options: ["Norimberga", "Monaco", "Berlino", "Francoforte"], answer: 0 },
+  { cat: "STORIA", q: "Quale regina governò il Regno Unito per 70 anni?", options: ["Elisabetta II", "Vittoria", "Elisabetta I", "Maria Tudor"], answer: 0 },
+  { cat: "STORIA", q: "In che anno iniziò il Rinascimento italiano?", options: ["XIV–XV secolo", "XII secolo", "XVII secolo", "X secolo"], answer: 0 },
+  { cat: "STORIA", q: "Quale civiltà antica abitava la penisola dello Yucatán?", options: ["Maya", "Inca", "Aztechi", "Olmechi"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il primo re di Roma?", options: ["Romolo", "Numa Pompilio", "Tarquinio Prisco", "Servio Tullio"], answer: 0 },
+  { cat: "STORIA", q: "Quale muro divideva la Germania Est da quella Ovest?", options: ["Muro di Berlino", "Vallo di Adriano", "Grande Muraglia", "Linea Maginot"], answer: 0 },
+  { cat: "STORIA", q: "Chi scoprì la penicillina nel 1928?", options: ["Alexander Fleming", "Louis Pasteur", "Robert Koch", "Edward Jenner"], answer: 0 },
+  { cat: "STORIA", q: "In che anno fu firmata la Magna Carta?", options: ["1215", "1066", "1315", "1415"], answer: 0 },
+  { cat: "STORIA", q: "Quale città greca ospitò i primi Giochi Olimpici antichi?", options: ["Olimpia", "Sparta", "Corinto", "Tebe"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il primo cancelliere della Germania unificata?", options: ["Otto von Bismarck", "Konrad Adenauer", "Angela Merkel", "Willy Brandt"], answer: 0 },
+  { cat: "STORIA", q: "In che anno cadde l'Impero Romano d'Occidente?", options: ["476 d.C.", "395 d.C.", "410 d.C.", "527 d.C."], answer: 0 },
+  { cat: "STORIA", q: "Quale esploratore veneziano viaggiò in Cina?", options: ["Marco Polo", "Giovanni Caboto", "Pietro Querini", "Antonio Pigafetta"], answer: 0 },
+  { cat: "STORIA", q: "Chi dipinse la volta della Cappella Sistina?", options: ["Michelangelo", "Caravaggio", "Tiziano", "Botticelli"], answer: 0 },
+  { cat: "STORIA", q: "In che anno ci fu l'attentato alle Torri Gemelle?", options: ["2001", "1999", "2003", "1998"], answer: 0 },
+  { cat: "STORIA", q: "Quale dinastia governò la Russia fino al 1917?", options: ["Romanov", "Asburgo", "Borbone", "Tudor"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il leader anti-apartheid in Sudafrica?", options: ["Nelson Mandela", "Mahatma Gandhi", "Martin Luther King", "Desmond Tutu"], answer: 0 },
+  { cat: "STORIA", q: "In che anno avvenne la presa della Bastiglia?", options: ["1789", "1799", "1776", "1815"], answer: 0 },
+  { cat: "STORIA", q: "Quale popolo antico usava la scrittura cuneiforme?", options: ["Sumeri", "Egizi", "Celti", "Vichinghi"], answer: 0 },
+  { cat: "STORIA", q: "Chi fu il celebre scienziato pisano padre del metodo scientifico?", options: ["Galileo Galilei", "Alessandro Volta", "Guglielmo Marconi", "Enrico Fermi"], answer: 0 },
+  { cat: "STORIA", q: "Quale guerra oppose Atene e Sparta?", options: ["Guerra del Peloponneso", "Guerre Persiane", "Guerre Puniche", "Guerra di Troia"], answer: 0 },
+  { cat: "STORIA", q: "In che anno l'euro entrò in circolazione come moneta?", options: ["2002", "1999", "2000", "2004"], answer: 0 },
+
+  // 151-200: SCIENZA
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico dell'acqua?", options: ["H₂O", "CO₂", "NaCl", "O₂"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il pianeta più vicino al Sole?", options: ["Mercurio", "Venere", "Marte", "Terra"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il gas più abbondante nell'aria terrestre?", options: ["Azoto", "Ossigeno", "Anidride carbonica", "Argo"], answer: 0 },
+  { cat: "SCIENZA", q: "A quanti gradi Celsius bolle l'acqua al mare?", options: ["100°C", "90°C", "80°C", "110°C"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'organo che pompa il sangue nel corpo?", options: ["Cuore", "Polmoni", "Fegato", "Reni"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il pianeta più grande del Sistema Solare?", options: ["Giove", "Saturno", "Urano", "Nettuno"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico del ferro?", options: ["Fe", "Ir", "Fr", "Ag"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale forza tiene i pianeti in orbita attorno al Sole?", options: ["Gravità", "Magnetismo", "Attrito", "Tensione"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'osso più lungo del corpo umano?", options: ["Femore", "Omero", "Tibia", "Radio"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale stella è più vicina alla Terra?", options: ["Il Sole", "Sirio", "Proxima Centauri", "Vega"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico dell'oro?", options: ["Au", "Ag", "Or", "Go"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale organo umano produce l'insulina?", options: ["Pancreas", "Milza", "Stomaco", "Tiroide"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale pianeta è noto come il Pianeta Rosso?", options: ["Marte", "Giove", "Venere", "Mercurio"], answer: 0 },
+  { cat: "SCIENZA", q: "A quanti gradi Celsius ghiaccia l'acqua pura?", options: ["0°C", "-10°C", "4°C", "32°C"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico dell'ossigeno?", options: ["O", "Ox", "Os", "Og"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale parte della cellula contiene il DNA?", options: ["Nucleo", "Ribosoma", "Membrana", "Vacuolo"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'unità di misura della resistenza elettrica?", options: ["Ohm", "Volt", "Ampere", "Watt"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale pianeta ha anelli ben visibili di ghiaccio e roccia?", options: ["Saturno", "Nettuno", "Urano", "Marte"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il processo con cui le piante producono glucosio?", options: ["Fotosintesi", "Respirazione", "Fermentazione", "Traspirazione"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico del sodio?", options: ["Na", "So", "Sd", "S"], answer: 0 },
+  { cat: "SCIENZA", q: "Quanti cromosomi ha normalmente una cellula umana?", options: ["46", "23", "44", "48"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale gas assorbono principalmente le piante di giorno?", options: ["Anidride carbonica", "Azoto", "Elio", "Metano"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'unità di misura della potenza?", options: ["Watt", "Joule", "Newton", "Pascal"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale metallo è il principale componente dell'acciaio?", options: ["Ferro", "Rame", "Oro", "Piombo"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale parte dell'occhio regola la luce che entra?", options: ["Pupilla / Iride", "Retina", "Cristallino", "Nervo ottico"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico del carbonio?", options: ["C", "Ca", "Co", "Cb"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale pianeta è il più caldo del Sistema Solare?", options: ["Venere", "Mercurio", "Marte", "Giove"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale senso è legato alla coclea?", options: ["Udito", "Olfatto", "Gusto", "Tatto"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è la formula chimica del sale da cucina?", options: ["NaCl", "KCl", "CaCO₃", "HCl"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale strato atmosferico protegge dai raggi UV?", options: ["Ozono", "Troposfera", "Termosfera", "Esosfera"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'unità di misura della forza?", options: ["Newton", "Joule", "Watt", "Bar"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale animale è un anfibio?", options: ["Rana", "Lucertola", "Tartaruga", "Serpente"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico dell'argento?", options: ["Ag", "Ar", "Au", "Al"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale ghiandola è considerata la 'ghiandola maestra'?", options: ["Ipofisi", "Tiroide", "Surrene", "Epifisi"], answer: 0 },
+  { cat: "SCIENZA", q: "Quanto dura circa una rotazione della Terra su sé stessa?", options: ["24 ore", "12 ore", "365 giorni", "48 ore"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'elemento chimico più leggero?", options: ["Idrogeno", "Elio", "Litio", "Carbonio"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale vaso sanguigno porta il sangue dal cuore ai tessuti?", options: ["Arteria", "Vena", "Capillare", "Aorta solo"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico del potassio?", options: ["K", "P", "Po", "Pt"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale fenomeno causa le maree principali sulla Terra?", options: ["Attrazione lunare", "Vento solare", "Rotazione del nucleo", "Eruzioni"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'unità di misura dell'energia?", options: ["Joule", "Volt", "Ohm", "Hertz"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale vitamina produce la pelle esposta al sole?", options: ["Vitamina D", "Vitamina C", "Vitamina A", "Vitamina K"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico del calcio?", options: ["Ca", "C", "Cl", "Cu"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale pianeta ruota su un fianco con inclinazione estrema?", options: ["Urano", "Nettuno", "Saturno", "Giove"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale pigmento dà il colore verde alle foglie?", options: ["Clorofilla", "Melanina", "Emoglobina", "Carotene"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è l'unità di misura della frequenza?", options: ["Hertz", "Decibel", "Lux", "Tesla"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale organo filtra il sangue producendo urina?", options: ["Reni", "Polmoni", "Stomaco", "Cistifellea"], answer: 0 },
+  { cat: "SCIENZA", q: "Qual è il simbolo chimico del rame?", options: ["Cu", "Cr", "Co", "Cm"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale gas è necessario per la combustione comune?", options: ["Ossigeno", "Azoto", "Elio", "Neon"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale galassia contiene il nostro Sistema Solare?", options: ["Via Lattea", "Andromeda", "Triangolo", "Sombrero"], answer: 0 },
+  { cat: "SCIENZA", q: "Quale particella subatomica ha carica negativa?", options: ["Elettrone", "Protone", "Neutrone", "Positrone"], answer: 0 }
 ];
 
 function getShuffledMissionDeck() {
@@ -171,7 +288,6 @@ function getShuffledMissionDeck() {
 let state = {
   roomCode: localStorage.getItem('trd_room') || null,
   playerId: localStorage.getItem('trd_pid') || null,
-  selectedAvatar: 'king_3d.jpg',
   selectedVoteId: null,
   selectedNightTargetId: null,
   roleRevealedLocally: false,
@@ -201,7 +317,7 @@ function renderAvatarHtml(avatar, alt = 'Avatar', extraClass = '') {
   if (isImageAsset(avatar)) {
     return `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(alt)}" class="avatar-img ${extraClass}" />`;
   }
-  return `<span class="${extraClass}">${escapeHtml(avatar || '👑')}</span>`;
+  return `<span class="${extraClass}">${escapeHtml(avatar || ANON_AVATAR)}</span>`;
 }
 
 function setContainerAvatar(el, avatar, alt = 'Avatar') {
@@ -209,7 +325,7 @@ function setContainerAvatar(el, avatar, alt = 'Avatar') {
   if (isImageAsset(avatar)) {
     el.innerHTML = `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(alt)}" class="avatar-img" />`;
   } else {
-    el.textContent = avatar || '👑';
+    el.textContent = avatar || ANON_AVATAR;
   }
 }
 
@@ -244,15 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (inviteCode) {
     $('roomCodeInput').value = inviteCode.toUpperCase().slice(0, 4);
   }
-
-  document.querySelectorAll('.avatar-btn-3d').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.avatar-btn-3d').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      state.selectedAvatar = btn.dataset.avatar || 'king_3d.jpg';
-      playTone(520, 0.1);
-    });
-  });
 
   $('soundToggleBtn').addEventListener('click', () => {
     soundEnabled = !soundEnabled;
@@ -345,7 +452,7 @@ async function createRoom() {
     players: {
       [pid]: {
         name,
-        avatar: state.selectedAvatar,
+        avatar: ANON_AVATAR,
         alive: true,
         online: true,
         ready: false,
@@ -377,7 +484,7 @@ async function joinRoom() {
   const pid = 'p_' + generateId(8);
   await db.ref(`rooms/${code}/players/${pid}`).set({
     name,
-    avatar: state.selectedAvatar,
+    avatar: ANON_AVATAR,
     alive: true,
     online: true,
     ready: false,
@@ -508,7 +615,7 @@ function renderCurrentPhase() {
   }
 }
 
-// --- LOBBY ---
+// --- LOBBY (ANONIMA FINO A FINE PARTITA) ---
 function renderLobby(room, isHost) {
   showScreen('screen-lobby');
   state.roleRevealedLocally = false;
@@ -535,7 +642,7 @@ function renderLobby(room, isHost) {
     li.className = 'player-item';
     li.innerHTML = `
       <div class="player-left">
-        <span class="player-avatar-slot">${renderAvatarHtml(p.avatar, p.name)}</span>
+        <span class="player-avatar-slot">${renderAvatarHtml(ANON_AVATAR, p.name)}</span>
         <span>${escapeHtml(p.name)} ${id === room.meta.hostId ? '👑' : ''}</span>
       </div>
       <span class="status-dot ${p.online ? '' : 'offline'}"></span>
@@ -555,7 +662,7 @@ function renderLobby(room, isHost) {
   }
 }
 
-// --- ASSEGNAZIONE RUOLI & NUOVO MAZZO MISSIONI (HOST) ---
+// --- ASSEGNAZIONE CASUALE RUOLI + AVATAR DEDICATO (HOST) ---
 async function startGame() {
   const players = state.roomData.players || {};
   const ids = Object.keys(players);
@@ -565,15 +672,30 @@ async function startGame() {
   const traitorCount = ids.length >= 8 ? 2 : 1;
   const traitorIds = shuffled.slice(0, traitorCount);
 
+  const faithfulPool = [...FAITHFUL_PERSONAS].sort(() => Math.random() - 0.5);
+  let faithfulCursor = 0;
+
   const updates = {};
   ids.forEach(id => {
     const isTraitor = traitorIds.includes(id);
     const allies = isTraitor ? traitorIds.filter(tid => tid !== id).map(tid => players[tid].name) : [];
+
+    let persona;
+    if (isTraitor) {
+      persona = TRAITOR_PERSONA;
+    } else {
+      persona = faithfulPool[faithfulCursor % faithfulPool.length];
+      faithfulCursor++;
+    }
+
     updates[`rooms/${state.roomCode}/secrets/${id}`] = {
       role: isTraitor ? 'TRAITOR' : 'FAITHFUL',
+      personaAvatar: persona.avatar,
+      personaLabel: persona.label,
       hasShield: false,
       allies
     };
+    updates[`rooms/${state.roomCode}/players/${id}/avatar`] = ANON_AVATAR;
     updates[`rooms/${state.roomCode}/players/${id}/alive`] = true;
     updates[`rooms/${state.roomCode}/players/${id}/ready`] = false;
     updates[`rooms/${state.roomCode}/players/${id}/votedFor`] = null;
@@ -589,7 +711,7 @@ async function startGame() {
   await db.ref().update(updates);
 }
 
-// --- RIVELAZIONE RUOLO ---
+// --- RIVELAZIONE RUOLO & AVATAR ---
 function renderRolePhase(room) {
   showScreen('screen-role');
   const players = Object.values(room.players || {});
@@ -611,16 +733,22 @@ function renderRolePhase(room) {
 function renderRoleCard() {
   if (!state.mySecret) return;
   const isTraitor = state.mySecret.role === 'TRAITOR';
+  const avatar = state.mySecret.personaAvatar || (isTraitor ? TRAITOR_PERSONA.avatar : 're.jpeg');
+  const personaLabel = state.mySecret.personaLabel || (isTraitor ? TRAITOR_PERSONA.label : 'Re');
+
   const card = $('secretRoleCard');
   card.querySelector('.secret-card-front').classList.add('hidden');
   $('secretRoleBack').classList.remove('hidden');
+
+  setContainerAvatar($('roleAvatarBox'), avatar, personaLabel);
+  $('rolePersonaLabel').textContent = personaLabel;
 
   card.className = `secret-card ${isTraitor ? 'revealed-traitor' : 'revealed-faithful'}`;
   $('roleBadgeType').textContent = isTraitor ? 'TRADITORE' : 'FEDELE';
   $('roleTitle').textContent = isTraitor ? 'SEI UN TRADITORE' : 'SEI UN FEDELE';
   $('roleDescription').textContent = isTraitor
     ? 'Inganna il gruppo alla Tavola Rotonda ed elimina i Fedeli durante la notte senza farti scoprire.'
-    : 'Collabora alle missioni, osserva i comportamenti sospetti ed esilia i Traditori alla Tavola Rotonda.';
+    : 'Rispondi alle missioni per lo Scudo, osserva i comportamenti ed esilia i Traditori.';
 
   const allyBox = $('fellowTraitorBox');
   if (isTraitor && state.mySecret.allies && state.mySecret.allies.length > 0) {
@@ -686,7 +814,7 @@ function renderMissionPhase(room, isHost) {
 
         $('missionFeedback').textContent = isCorrect
           ? 'Risposta esatta! Attendi gli altri giocatori...'
-          : 'Risposta errata! Non puoi ottenere lo Scudo in questo round.';
+          : 'Risposta errata! Nessun punto Scudo in questo round.';
         $('missionFeedback').classList.remove('hidden');
 
         await db.ref(`rooms/${state.roomCode}/players/${state.playerId}/missionScore`).set(score);
@@ -776,7 +904,7 @@ async function evaluateMissionCompletion(forceFinish = false) {
   }
 }
 
-// --- TAVOLA ROTONDA & VOTO ---
+// --- TAVOLA ROTONDA & VOTO (ANONIMO) ---
 function renderVotingPhase(room) {
   showScreen('screen-voting');
   state.missionAnswered = false;
@@ -801,7 +929,7 @@ function renderVotingPhase(room) {
     const currentSelected = me.votedFor || state.selectedVoteId;
     card.className = `vote-card ${currentSelected === id ? 'selected' : ''}`;
     card.innerHTML = `
-      <span class="vote-card-avatar">${renderAvatarHtml(p.avatar, p.name)}</span>
+      <span class="vote-card-avatar">${renderAvatarHtml(ANON_AVATAR, p.name)}</span>
       <span class="v-name">${escapeHtml(p.name)}</span>
     `;
     if (me.alive && !me.votedFor) {
@@ -863,22 +991,18 @@ async function resolveRoundTableVotes(room, aliveEntries) {
     updates[`rooms/${state.roomCode}/meta/exiledInfo`] = {
       tie: true,
       name: 'Parità di voti!',
-      avatar: '⚖️',
-      role: null
+      avatar: '⚖️'
     };
   } else {
     const exiledId = topCandidates[0];
     const exiledPlayer = room.players[exiledId];
-    const secretSnap = await db.ref(`rooms/${state.roomCode}/secrets/${exiledId}`).get();
-    const exiledRole = secretSnap.val()?.role || 'FAITHFUL';
 
     updates[`rooms/${state.roomCode}/players/${exiledId}/alive`] = false;
     updates[`rooms/${state.roomCode}/meta/exiledInfo`] = {
       tie: false,
       id: exiledId,
       name: exiledPlayer.name,
-      avatar: exiledPlayer.avatar,
-      role: exiledRole
+      avatar: ANON_AVATAR
     };
   }
 
@@ -892,28 +1016,25 @@ async function resolveRoundTableVotes(room, aliveEntries) {
   checkWinConditions();
 }
 
-// --- ESILIO ---
+// --- ESILIO (RUOLO SEGRETO FINO A FINE PARTITA) ---
 function renderExilePhase(room, isHost) {
   showScreen('screen-exile');
   const info = room.meta.exiledInfo;
   if (!info) return;
 
-  setContainerAvatar($('exileAvatar'), info.avatar, info.name || 'Esiliato');
+  setContainerAvatar($('exileAvatar'), info.avatar || ANON_AVATAR, info.name || 'Esiliato');
   const badge = $('exileRoleReveal');
 
   if (info.tie) {
     $('exileAnnouncement').textContent = 'Nessun Esilio!';
     badge.textContent = 'PARITÀ ALLA TAVOLA ROTONDA';
     badge.className = 'revealed-role-pill';
-    $('exileSubtext').textContent = 'Il gruppo non ha raggiunto una maggioranza. Nessuno lascia il castello.';
+    $('exileSubtext').textContent = 'Il gruppo non ha raggiunto una maggioranza. Nessuno lascia il gioco.';
   } else {
-    const isTraitor = info.role === 'TRAITOR';
     $('exileAnnouncement').textContent = `${info.name} è stato esiliato`;
-    badge.textContent = isTraitor ? 'ERA UN TRADITORE!' : 'ERA UN FEDELE';
-    badge.className = `revealed-role-pill ${isTraitor ? 'traitor' : 'faithful'}`;
-    $('exileSubtext').textContent = isTraitor
-      ? 'Ottimo lavoro! Avete smascherato un ingannatore.'
-      : 'Avete esiliato un innocente. I Traditori ringraziano...';
+    badge.textContent = 'RUOLO SEGRETO FINO A FINE PARTITA';
+    badge.className = 'revealed-role-pill';
+    $('exileSubtext').textContent = 'Il suo ruolo reale resterà segreto fino alla fine della partita.';
   }
 
   $('hostExileNext').classList.toggle('hidden', !isHost);
@@ -953,7 +1074,7 @@ function renderNightPhase(room) {
       const card = document.createElement('div');
       card.className = `vote-card ${state.selectedNightTargetId === id ? 'selected' : ''}`;
       card.innerHTML = `
-        <span class="vote-card-avatar">${renderAvatarHtml(p.avatar, p.name)}</span>
+        <span class="vote-card-avatar">${renderAvatarHtml(ANON_AVATAR, p.name)}</span>
         <span class="v-name">${escapeHtml(p.name)}</span>
       `;
       card.onclick = () => {
@@ -975,7 +1096,7 @@ function renderNightPhase(room) {
       if (!p.alive || id === state.playerId) return;
       const chip = document.createElement('button');
       chip.className = 'decoy-chip';
-      chip.innerHTML = `${renderAvatarHtml(p.avatar, p.name, 'decoy-mini-avatar')} <span>${escapeHtml(p.name)}</span>`;
+      chip.innerHTML = `${renderAvatarHtml(ANON_AVATAR, p.name, 'decoy-mini-avatar')} <span>${escapeHtml(p.name)}</span>`;
       chip.onclick = () => {
         document.querySelectorAll('.decoy-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
@@ -1027,7 +1148,7 @@ async function submitNightAction() {
       eliminated: false,
       icon: '🗡️',
       title: 'Notte di Avvertimento!',
-      text: `I Traditori hanno lasciato un pugnale sul cuscino di ${targetPlayer.name}, ma nella prima notte Blitz nessuno viene eliminato.`
+      text: `I Traditori hanno lasciato un avvertimento a ${targetPlayer.name}, ma nella prima notte Blitz nessuno viene eliminato.`
     };
   } else if (protectedByShield) {
     updates[`rooms/${state.roomCode}/meta/morningInfo`] = {
@@ -1040,9 +1161,9 @@ async function submitNightAction() {
     updates[`rooms/${state.roomCode}/players/${targetId}/alive`] = false;
     updates[`rooms/${state.roomCode}/meta/morningInfo`] = {
       eliminated: true,
-      icon: targetPlayer.avatar,
+      icon: ANON_AVATAR,
       title: `${targetPlayer.name} non si è svegliato`,
-      text: 'I Traditori hanno colpito durante la notte. Era un FEDELE.'
+      text: 'Qualcuno è stato eliminato durante la notte. Il suo ruolo resterà segreto fino a fine partita.'
     };
   }
 
@@ -1063,8 +1184,9 @@ function renderMorningPhase(room, isHost) {
 
   const badge = $('morningRoleBadge');
   if (info.eliminated) {
-    badge.textContent = 'VITTIMA DELLA NOTTE • FEDELE';
-    badge.className = 'revealed-role-pill faithful';
+    badge.textContent = 'RUOLO SEGRETO FINO A FINE PARTITA';
+    badge.className = 'revealed-role-pill';
+    badge.classList.remove('hidden');
   } else {
     badge.classList.add('hidden');
   }
@@ -1126,7 +1248,7 @@ async function checkWinConditions() {
   }
 }
 
-// --- FINE PARTITA ---
+// --- FINE PARTITA (RIVELAZIONE COMPLETA AVATAR + RUOLO) ---
 function renderGameOverPhase(room, isHost) {
   showScreen('screen-gameover');
   const faithfulWon = room.meta.winner === 'FAITHFUL';
@@ -1134,19 +1256,23 @@ function renderGameOverPhase(room, isHost) {
   $('winnerIcon').textContent = faithfulWon ? '👑' : '🗡️';
   $('winnerHeadline').textContent = faithfulWon ? 'VINCONO I FEDELI!' : 'VINCONO I TRADITORI!';
   $('winnerSummary').textContent = faithfulWon
-    ? 'Tutti i Traditori sono stati smascherati ed esiliati dal castello.'
-    : 'I Traditori hanno raggiunto la parità numerica e preso il controllo del gioco.';
+    ? 'Tutti i Traditori sono stati eliminati.'
+    : 'I Traditori hanno raggiunto la parità numerica e preso il controllo.';
 
   const list = $('finalRolesList');
   list.innerHTML = '';
   Object.entries(room.players || {}).forEach(([id, p]) => {
-    const isTraitor = room.secrets?.[id]?.role === 'TRAITOR';
+    const secret = room.secrets?.[id] || {};
+    const isTraitor = secret.role === 'TRAITOR';
+    const finalAvatar = secret.personaAvatar || (isTraitor ? TRAITOR_PERSONA.avatar : 're.jpeg');
+    const personaLabel = secret.personaLabel || (isTraitor ? TRAITOR_PERSONA.label : 'Fedele');
+
     const li = document.createElement('li');
     li.className = 'player-item';
     li.innerHTML = `
       <div class="player-left">
-        <span class="player-avatar-slot">${renderAvatarHtml(p.avatar, p.name)}</span>
-        <span>${escapeHtml(p.name)} ${p.alive ? '' : '(Eliminato)'}</span>
+        <span class="player-avatar-slot">${renderAvatarHtml(finalAvatar, personaLabel)}</span>
+        <span>${escapeHtml(p.name)} — <strong>${escapeHtml(personaLabel)}</strong> ${p.alive ? '' : '(Eliminato)'}</span>
       </div>
       <span class="pill" style="color: ${isTraitor ? '#ff4d6d' : '#58a6ff'}; font-weight:700;">
         ${isTraitor ? 'TRADITORE' : 'FEDELE'}
@@ -1172,6 +1298,7 @@ async function resetToLobby() {
   };
 
   Object.keys(room.players || {}).forEach(id => {
+    updates[`rooms/${state.roomCode}/players/${id}/avatar`] = ANON_AVATAR;
     updates[`rooms/${state.roomCode}/players/${id}/alive`] = true;
     updates[`rooms/${state.roomCode}/players/${id}/ready`] = false;
     updates[`rooms/${state.roomCode}/players/${id}/votedFor`] = null;
@@ -1179,4 +1306,4 @@ async function resetToLobby() {
   });
 
   await db.ref().update(updates);
-        }
+    }
