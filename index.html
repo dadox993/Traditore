@@ -44,15 +44,37 @@
           <label for="playerNameInput">Il tuo Nome in gioco</label>
           <input type="text" id="playerNameInput" maxlength="16" placeholder="Es. Davide" autocomplete="off" />
 
-          <div class="avatar-picker" id="avatarPicker">
-            <button type="button" class="avatar-opt selected" data-avatar="🎭">🎭</button>
-            <button type="button" class="avatar-opt" data-avatar="👑">👑</button>
-            <button type="button" class="avatar-opt" data-avatar="🗡️">🗡️</button>
-            <button type="button" class="avatar-opt" data-avatar="🕯️">🕯️</button>
-            <button type="button" class="avatar-opt" data-avatar="🦊">🦊</button>
-            <button type="button" class="avatar-opt" data-avatar="🐍">🐍</button>
-            <button type="button" class="avatar-opt" data-avatar="🦉">🦉</button>
-            <button type="button" class="avatar-opt" data-avatar="🐺">🐺</button>
+          <div class="avatar-picker-3d" id="avatarPicker">
+            <button type="button" class="avatar-btn-3d selected" data-avatar="king_3d.jpg" title="Re">
+              <img src="king_3d.jpg" alt="Re" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="queen_3d.jpg" title="Regina">
+              <img src="queen_3d.jpg" alt="Regina" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="hunter_3d.jpg" title="Cacciatore">
+              <img src="hunter_3d.jpg" alt="Cacciatore" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="peasant_3d.jpg" title="Contadino">
+              <img src="peasant_3d.jpg" alt="Contadino" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="traitor_3d.jpg" title="Traditore">
+              <img src="traitor_3d.jpg" alt="Traditore" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="priest_3d.jpg" title="Prete">
+              <img src="priest_3d.jpg" alt="Prete" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="judge_3d.jpg" title="Giudice">
+              <img src="judge_3d.jpg" alt="Giudice" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="courtesan_3d.jpg" title="Meretrice">
+              <img src="courtesan_3d.jpg" alt="Meretrice" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="teacher_3d.jpg" title="Maestra">
+              <img src="teacher_3d.jpg" alt="Maestra" />
+            </button>
+            <button type="button" class="avatar-btn-3d" data-avatar="knight_3d.jpg" title="Cavaliere">
+              <img src="knight_3d.jpg" alt="Cavaliere" />
+            </button>
           </div>
 
           <button id="createRoomBtn" class="btn btn-gold">Crea Nuova Stanza</button>
@@ -150,7 +172,10 @@
         <div class="phase-header">
           <span class="eyebrow">ROUND <span class="round-num">1</span> • TAVOLA ROTONDA</span>
           <h2>Chi è il Traditore?</h2>
-          <p id="shieldStatusBanner" class="shield-banner hidden">🛡️ Hai vinto lo Scudo! Stanotte sei protetto.</p>
+          <p id="shieldStatusBanner" class="shield-banner hidden">
+            <img src="shield_3d.jpg" alt="Scudo" class="shield-inline-img" />
+            <span>Hai vinto lo Scudo! Stanotte sei protetto.</span>
+          </p>
         </div>
 
         <div class="card">
@@ -168,7 +193,7 @@
       <section id="screen-exile" class="screen">
         <div class="card reveal-card">
           <span class="eyebrow">VERDETTO DELLA TAVOLA ROTONDA</span>
-          <div id="exileAvatar" class="big-avatar">🎭</div>
+          <div id="exileAvatar" class="big-avatar">👑</div>
           <h2 id="exileAnnouncement">---</h2>
           <div id="exileRoleReveal" class="revealed-role-pill">ERA UN FEDELE</div>
           <p id="exileSubtext" class="subtitle"></p>
