@@ -706,3 +706,12 @@ input[type="text"]:focus {
 .hidden {
   display: none !important;
 }
+/* Allineamento Eyebrow Home */
+.hero-eyebrow {
+  line-height: 1.6;
+}
+
+.hero-eyebrow span {
+  white-space: nowrap;
+  font-size: clamp(0.62rem, 2.7vw, 0.72rem);
+}
