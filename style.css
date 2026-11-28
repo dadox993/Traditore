@@ -55,38 +55,51 @@ html, body {
   position: sticky;
   top: 0;
   z-index: 30;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
+  padding: 14px 16px;
   background: rgba(11, 11, 15, 0.88);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .brand {
+  grid-column: 2;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  text-align: center;
 }
 
 .brand-icon {
   color: var(--gold);
-  font-size: 1.25rem;
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .brand-title {
   font-family: 'Cinzel', serif;
   font-weight: 800;
   font-size: 1rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--gold-bright);
+  white-space: nowrap;
 }
 
 .top-controls {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.sub-action-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px 0;
 }
 
 .room-badge {
@@ -119,7 +132,7 @@ html, body {
    ======================================================= */
 .screen-container {
   flex: 1;
-  padding: 18px 16px 24px;
+  padding: 12px 16px 24px;
 }
 
 .screen {
@@ -138,7 +151,7 @@ html, body {
 
 .hero-card {
   text-align: center;
-  padding: 20px 14px 24px;
+  padding: 14px 14px 22px;
 }
 
 .eyebrow {
