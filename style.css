@@ -845,7 +845,7 @@ input[type="text"]:focus {
 }
 
 /* =======================================================
-   8. GRIGLIA NOTTE, ESILIO, ALBA, FINE PARTITA & BANNER
+   8. GRIGLIA NOTTE, ESILIO, ALBA, FINE PARTITA, CHAT & BANNER
    ======================================================= */
 .vote-grid {
   display: grid;
@@ -982,6 +982,34 @@ input[type="text"]:focus {
 .decoy-chip.active {
   border-color: var(--gold);
   background: rgba(212, 175, 55, 0.16);
+}
+
+.general-chat-card {
+  margin-top: 12px;
+  border-color: var(--border-gold);
+}
+
+.general-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.general-chat-head h4 {
+  margin-bottom: 0;
+  color: var(--gold-bright);
+}
+
+.general-chat-messages {
+  max-height: 175px;
+}
+
+.chat-msg-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-left: 4px;
 }
 
 .chat-messages {
