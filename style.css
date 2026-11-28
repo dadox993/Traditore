@@ -103,10 +103,10 @@ html, body {
 }
 
 .room-badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 5px 10px;
+  letter-spacing: 0.06em;
+  padding: 5px 9px;
   border-radius: 999px;
   background: rgba(212, 175, 55, 0.14);
   border: 1px solid var(--border-gold);
@@ -522,8 +522,28 @@ input[type="text"]:focus {
 }
 
 /* =======================================================
-   6. MISSIONE SCUDO (DOMANDE CORTE 1 RIGA E LEGGIBILI)
+   6. MISSIONI UNICHE & RELIQUIE (SCUDO, MONOCOLO, GIUSTIZIERE)
    ======================================================= */
+.mission-relic-preview,
+.relic-hero-box {
+  width: 68px;
+  height: 68px;
+  margin: 4px auto 10px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-gold);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  background: #14141c;
+}
+
+.mission-relic-img,
+.relic-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .mission-top-row {
   display: flex;
   align-items: center;
@@ -616,8 +636,70 @@ input[type="text"]:focus {
   color: var(--gold-bright);
 }
 
+.monocle-clue-card {
+  border-color: var(--border-gold);
+  background: linear-gradient(165deg, #1b1929 0%, #12121a 100%);
+}
+
+.monocle-clue-text {
+  margin: 12px 0;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+  font-style: italic;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.monocle-reminder {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.justiciar-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(201, 24, 74, 0.12);
+  border: 1px solid rgba(255, 77, 109, 0.45);
+  text-align: left;
+}
+
+.justiciar-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.justiciar-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 77, 109, 0.6);
+  flex-shrink: 0;
+}
+
+.justiciar-desc {
+  font-size: 0.82rem;
+  color: #f3d2da;
+  line-height: 1.35;
+}
+
 /* =======================================================
-   7. TAVOLA ROTONDA CIRCOLARE CON ASSET DEDICATI
+   7. TAVOLA ROTONDA CIRCOLARE CON ASSET DEDICATI (FINO A 15)
    ======================================================= */
 .instruction-text {
   font-size: 0.92rem;
@@ -631,7 +713,7 @@ input[type="text"]:focus {
     linear-gradient(180deg, rgba(11, 11, 15, 0.72) 0%, rgba(11, 11, 15, 0.86) 100%),
     url("sfondotavola.jpg") center / cover no-repeat;
   border-color: var(--border-gold);
-  padding: 16px 12px 20px;
+  padding: 16px 10px 20px;
 }
 
 .round-table-arena {
@@ -646,7 +728,7 @@ input[type="text"]:focus {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 46%;
+  width: 42%;
   aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%);
   border-radius: 50%;
@@ -676,14 +758,14 @@ input[type="text"]:focus {
   left: var(--x, 50%);
   top: var(--y, 50%);
   transform: translate(-50%, -50%);
-  width: 78px;
+  width: 68px;
   background: transparent;
   border: none;
   color: var(--text-main);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   padding: 0;
   transition: transform 0.15s ease;
@@ -695,8 +777,8 @@ input[type="text"]:focus {
 
 .seat-frame-wrap {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
@@ -724,19 +806,19 @@ input[type="text"]:focus {
 .table-seat.selected .seat-frame-wrap {
   box-shadow:
     0 0 0 2.5px var(--crimson-bright),
-    0 0 18px rgba(255, 77, 109, 0.75);
+    0 0 18px rgba(255, 77, 109, 0.8);
 }
 
 .seat-name {
-  max-width: 84px;
-  font-size: 0.72rem;
+  max-width: 74px;
+  font-size: 0.67rem;
   font-weight: 700;
   line-height: 1.15;
   text-align: center;
   color: #ffffff;
-  background: rgba(11, 11, 15, 0.82);
+  background: rgba(11, 11, 15, 0.84);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 999px;
   white-space: nowrap;
   overflow: hidden;
@@ -750,15 +832,15 @@ input[type="text"]:focus {
 
 @media (max-width: 400px) {
   .table-seat {
-    width: 68px;
+    width: 60px;
   }
   .seat-frame-wrap {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
   }
   .seat-name {
-    max-width: 72px;
-    font-size: 0.66rem;
+    max-width: 64px;
+    font-size: 0.62rem;
   }
 }
 
