@@ -636,6 +636,18 @@ input[type="text"]:focus {
   color: var(--gold-bright);
 }
 
+.mission-winner-banner {
+  margin-top: 8px;
+  display: inline-block;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.16);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-bright);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .monocle-clue-card {
   border-color: var(--border-gold);
   background: linear-gradient(165deg, #1b1929 0%, #12121a 100%);
@@ -845,7 +857,7 @@ input[type="text"]:focus {
 }
 
 /* =======================================================
-   8. GRIGLIA NOTTE, ESILIO, ALBA, FINE PARTITA, CHAT & BANNER
+   8. GRIGLIA NOTTE, ESILIO, ALBA, FINE PARTITA, CHAT & CRONACA
    ======================================================= */
 .vote-grid {
   display: grid;
@@ -1002,6 +1014,24 @@ input[type="text"]:focus {
   color: var(--gold-bright);
 }
 
+.chat-head-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.unread-badge {
+  border: 1px solid var(--gold);
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #120f07;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
 .general-chat-messages {
   max-height: 175px;
 }
@@ -1035,6 +1065,32 @@ input[type="text"]:focus {
 
 .chat-input-row input {
   margin-bottom: 0;
+}
+
+.chronicle-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chronicle-item {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-elevated);
+  border-left: 3px solid var(--gold);
+  font-size: 0.86rem;
+  color: var(--text-main);
+}
+
+.chronicle-round {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin-right: 6px;
 }
 
 .sticky-footer {
