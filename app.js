@@ -17,7 +17,7 @@ const db = firebase.database();
 
 const MISSION_DURATION_MS = 30000;
 const SHIELD_IMG = "shield_3d.jpg";
-const ANON_AVATAR = "🎭";
+const ANON_AVATAR = "avataranonimo.jpg";
 
 const TRAITOR_PERSONA = {
   avatar: "traditore.jpeg",
@@ -317,7 +317,7 @@ function renderAvatarHtml(avatar, alt = 'Avatar', extraClass = '') {
   if (isImageAsset(avatar)) {
     return `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(alt)}" class="avatar-img ${extraClass}" />`;
   }
-  return `<span class="${extraClass}">${escapeHtml(avatar || ANON_AVATAR)}</span>`;
+  return `<span class="${extraClass}">${escapeHtml(avatar || '🎭')}</span>`;
 }
 
 function setContainerAvatar(el, avatar, alt = 'Avatar') {
@@ -325,7 +325,7 @@ function setContainerAvatar(el, avatar, alt = 'Avatar') {
   if (isImageAsset(avatar)) {
     el.innerHTML = `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(alt)}" class="avatar-img" />`;
   } else {
-    el.textContent = avatar || ANON_AVATAR;
+    el.textContent = avatar || '🎭';
   }
 }
 
@@ -904,7 +904,7 @@ async function evaluateMissionCompletion(forceFinish = false) {
   }
 }
 
-// --- TAVOLA ROTONDA & VOTO (ANONIMO) ---
+// --- TAVOLA ROTONDA CIRCOLARE & VOTO (ANONIMO) ---
 function renderVotingPhase(room) {
   showScreen('screen-voting');
   state.missionAnswered = false;
@@ -917,29 +917,44 @@ function renderVotingPhase(room) {
   }
 
   const aliveEntries = Object.entries(room.players || {}).filter(([, p]) => p.alive);
+  const votableEntries = aliveEntries.filter(([id]) => id !== state.playerId);
   const votedCount = aliveEntries.filter(([, p]) => !!p.votedFor).length;
   $('voteProgressText').textContent = `Voti registrati: ${votedCount}/${aliveEntries.length}`;
 
   const grid = $('votingGrid');
   grid.innerHTML = '';
 
-  aliveEntries.forEach(([id, p]) => {
-    if (id === state.playerId) return;
-    const card = document.createElement('div');
+  const totalSeats = votableEntries.length;
+  const radiusPercent = totalSeats <= 4 ? 38 : 40;
+
+  votableEntries.forEach(([id, p], index) => {
+    const angle = (-Math.PI / 2) + (index * (2 * Math.PI)) / Math.max(totalSeats, 1);
+    const xPct = 50 + radiusPercent * Math.cos(angle);
+    const yPct = 50 + radiusPercent * Math.sin(angle);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
     const currentSelected = me.votedFor || state.selectedVoteId;
-    card.className = `vote-card ${currentSelected === id ? 'selected' : ''}`;
-    card.innerHTML = `
-      <span class="vote-card-avatar">${renderAvatarHtml(ANON_AVATAR, p.name)}</span>
-      <span class="v-name">${escapeHtml(p.name)}</span>
+    btn.className = `table-seat ${currentSelected === id ? 'selected' : ''}`;
+    btn.style.setProperty('--x', `${xPct.toFixed(1)}%`);
+    btn.style.setProperty('--y', `${yPct.toFixed(1)}%`);
+
+    btn.innerHTML = `
+      <span class="seat-frame-wrap">
+        <img src="${ANON_AVATAR}" alt="Giocatore anonimo" class="seat-avatar-img" />
+        <img src="cornicegiocatore.jpg" alt="" class="seat-border-img" />
+      </span>
+      <span class="seat-name">${escapeHtml(p.name)}</span>
     `;
+
     if (me.alive && !me.votedFor) {
-      card.onclick = () => {
+      btn.onclick = () => {
         state.selectedVoteId = id;
         playTone(460, 0.1);
         renderVotingPhase(room);
       };
     }
-    grid.appendChild(card);
+    grid.appendChild(btn);
   });
 
   const voteBtn = $('confirmVoteBtn');
@@ -1306,4 +1321,4 @@ async function resetToLobby() {
   });
 
   await db.ref().update(updates);
-    }
+}
