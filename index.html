@@ -189,7 +189,7 @@
         </div>
       </section>
 
-      <!-- 5. TAVOLA ROTONDA (DISCUSSIONE, VOTO E ACCUSA GIUSTIZIERE) -->
+      <!-- 5. TAVOLA ROTONDA (DISCUSSIONE, VOTO, ACCUSA GIUSTIZIERE E CHAT GENERALE) -->
       <section id="screen-voting" class="screen">
         <div class="phase-header">
           <span class="eyebrow">ROUND <span class="round-num">1</span> • TAVOLA ROTONDA</span>
@@ -230,6 +230,18 @@
         <div class="sticky-footer">
           <button id="confirmVoteBtn" class="btn btn-crimson" disabled>Conferma Voto</button>
           <p id="voteProgressText" class="wait-note">Voti registrati: 0/0</p>
+        </div>
+
+        <div id="generalChatBox" class="card chat-card general-chat-card">
+          <div class="general-chat-head">
+            <h4>💬 Chat Generale del Regno</h4>
+            <span class="pill">Confronto Voto</span>
+          </div>
+          <div id="generalChatMessages" class="chat-messages general-chat-messages"></div>
+          <div class="chat-input-row">
+            <input type="text" id="generalChatInput" placeholder="Scrivi chi sospetti o perché voti..." maxlength="120" />
+            <button id="sendGeneralChatBtn" type="button" class="btn btn-small btn-gold">Invia</button>
+          </div>
         </div>
       </section>
 
