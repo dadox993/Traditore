@@ -195,6 +195,8 @@
           <span class="eyebrow">ROUND <span class="round-num">1</span> • TAVOLA ROTONDA</span>
           <h2 id="votingMainTitle">Chi vuoi esiliare?</h2>
 
+          <p id="missionWinnerBanner" class="mission-winner-banner hidden"></p>
+
           <p id="shieldStatusBanner" class="shield-banner hidden">
             <img src="shield_3d.jpg" alt="Scudo" class="shield-inline-img" />
             <span>Hai vinto lo Scudo! Stanotte sei protetto.</span>
@@ -235,7 +237,10 @@
         <div id="generalChatBox" class="card chat-card general-chat-card">
           <div class="general-chat-head">
             <h4>💬 Chat Generale del Regno</h4>
-            <span class="pill">Confronto Voto</span>
+            <div class="chat-head-badges">
+              <button id="unreadChatBadge" type="button" class="unread-badge hidden">0 nuovi</button>
+              <span class="pill">Confronto Voto</span>
+            </div>
           </div>
           <div id="generalChatMessages" class="chat-messages general-chat-messages"></div>
           <div class="chat-input-row">
@@ -334,6 +339,14 @@
         <div class="card">
           <h3>Rivelazione Completa dei Ruoli e Personaggi</h3>
           <ul id="finalRolesList" class="player-list"></ul>
+        </div>
+
+        <div class="card chronicle-card">
+          <div class="section-head">
+            <h3>📜 Cronaca del Regno</h3>
+            <span class="pill">Eventi</span>
+          </div>
+          <ul id="chronicleList" class="chronicle-list"></ul>
         </div>
 
         <div id="hostGameOverControls" class="sticky-footer hidden">
