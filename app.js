@@ -15,8 +15,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+const MAX_PLAYERS = 15;
 const MISSION_DURATION_MS = 30000;
 const SHIELD_IMG = "shield_3d.jpg";
+const MONOCLE_IMG = "cannocchiale.jpg";
+const JUSTICIAR_IMG = "giustiziere.jpg";
 const ANON_AVATAR = "avataranonimo.jpg";
 
 const TRAITOR_PERSONA = {
@@ -34,6 +37,20 @@ const FAITHFUL_PERSONAS = [
   { avatar: "meretrice.jpeg", label: "Meretrice" },
   { avatar: "maestra.jpeg", label: "Maestra" },
   { avatar: "cavaliere.jpeg", label: "Cavaliere" }
+];
+
+const TRAITOR_SPY_CLUES = [
+  "Attraverso la lente vedi una candela accesa fino a tardi e una pergamena bruciata nel camino...",
+  "Il suo sguardo sfugge alle torce della sala: sembra nascondere un secondo fine.",
+  "Hai scorto un bagliore metallico sotto il mantello, ma l'ombra ha subito coperto la scena.",
+  "Sussurra nell'oscurità: i suoi passi non seguono quelli del resto del regno."
+];
+
+const FAITHFUL_SPY_CLUES = [
+  "Attraverso la lente osservi un passo fermo e lo sguardo rivolto verso le mura del regno.",
+  "Le sue mani sono pulite alla luce delle torce, anche se la tensione della notte lo tradisce.",
+  "Sembra cercare risposte tra la folla, ignaro delle trame che si muovono alle sue spalle.",
+  "Non hai scorto alcuna lama nell'ombra: il suo animo appare limpido."
 ];
 
 // =======================================================
@@ -61,7 +78,7 @@ function playTone(freq = 440, duration = 0.25, type = 'sine') {
 }
 
 // =======================================================
-// 3. MAZZO DI 200 MISSIONI SCUDO (BREVE, 1 RIGA)
+// 3. MAZZO DI 200 MISSIONI UNICHE (BREVE, 1 RIGA)
 // =======================================================
 const SHIELD_MISSIONS = [
   // 1-50: CULTURA GENERALE
@@ -93,7 +110,7 @@ const SHIELD_MISSIONS = [
   { cat: "CULTURA", q: "Quanti anelli ha il logo olimpico?", options: ["5", "4", "6", "7"], answer: 0 },
   { cat: "CULTURA", q: "Quale paese ha forma di stivale?", options: ["Italia", "Grecia", "Portogallo", "Croazia"], answer: 0 },
   { cat: "CULTURA", q: "Qual è il mammifero terrestre più veloce?", options: ["Ghepardo", "Leone", "Gazzella", "Cavallo"], answer: 0 },
-  { cat: "CULTURA", q: "Qual è la capitale della Grecia?", options: ["Atene", "Salonicco", "Spalta", "Patrasso"], answer: 0 },
+  { cat: "CULTURA", q: "Qual è la capitale della Grecia?", options: ["Atene", "Salonicco", "Sparta", "Patrasso"], answer: 0 },
   { cat: "CULTURA", q: "Quanti lati ha un esagono?", options: ["6", "5", "7", "8"], answer: 0 },
   { cat: "CULTURA", q: "Quale mare bagna la costa adriatica?", options: ["Mare Adriatico", "Mar Nero", "Mar Rosso", "Mar Baltico"], answer: 0 },
   { cat: "CULTURA", q: "Qual è la capitale del Portogallo?", options: ["Lisbona", "Porto", "Faro", "Coimbra"], answer: 0 },
@@ -282,6 +299,13 @@ function getShuffledMissionDeck() {
   return deck;
 }
 
+function getMissionTypeForRound(round) {
+  if (round === 1) return 'SHIELD';
+  if (round === 2) return 'MONOCLE';
+  if (round === 3) return 'JUSTICIAR';
+  return null;
+}
+
 // =======================================================
 // 4. STATO LOCALE E RICONNESSIONE
 // =======================================================
@@ -289,6 +313,9 @@ let state = {
   roomCode: localStorage.getItem('trd_room') || null,
   playerId: localStorage.getItem('trd_pid') || null,
   selectedVoteId: null,
+  justiciarMode: false,
+  justiciarTargets: [],
+  selectedMonocleTargetId: null,
   selectedNightTargetId: null,
   roleRevealedLocally: false,
   missionAnswered: false,
@@ -409,7 +436,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  $('confirmVoteBtn').addEventListener('click', submitVote);
+  $('confirmMonocleBtn').addEventListener('click', useMonoclePower);
+  $('proceedFromMonocleBtn').addEventListener('click', () => {
+    db.ref(`rooms/${state.roomCode}/meta/phase`).set('VOTING');
+  });
+  $('forceVotingFromMonocleBtn').addEventListener('click', () => {
+    db.ref(`rooms/${state.roomCode}/meta/phase`).set('VOTING');
+  });
+
+  $('toggleJusticiarModeBtn').addEventListener('click', () => {
+    state.justiciarMode = !state.justiciarMode;
+    state.selectedVoteId = null;
+    state.justiciarTargets = [];
+    playTone(state.justiciarMode ? 240 : 480, 0.18, 'triangle');
+    renderVotingPhase(state.roomData);
+  });
+
+  $('confirmVoteBtn').addEventListener('click', () => {
+    if (state.justiciarMode) {
+      submitJusticiarAccusation();
+    } else {
+      submitVote();
+    }
+  });
 
   $('startNightBtn').addEventListener('click', () => {
     db.ref(`rooms/${state.roomCode}/meta/phase`).set('NIGHT');
@@ -441,13 +490,20 @@ async function createRoom() {
       hostId: pid,
       phase: 'LOBBY',
       round: 1,
+      missionType: 'SHIELD',
       missionDeck: getShuffledMissionDeck(),
       deckCursor: 0,
       missionEndsAt: null,
       shieldWinnerId: null,
+      monocleWinnerId: null,
+      monocleResult: null,
+      justiciarWinnerId: null,
+      justiciarUsed: false,
       exiledInfo: null,
       morningInfo: null,
-      winner: null
+      winner: null,
+      winnerHeadline: null,
+      winnerSummary: null
     },
     players: {
       [pid]: {
@@ -478,7 +534,7 @@ async function joinRoom() {
   const room = snap.val();
   const players = room.players || {};
   if (room.meta.phase !== 'LOBBY') return showToast('La partita è già iniziata!');
-  if (Object.keys(players).length >= 10) return showToast('Stanza piena (max 10 giocatori)');
+  if (Object.keys(players).length >= MAX_PLAYERS) return showToast(`Stanza piena (max ${MAX_PLAYERS} giocatori)`);
 
   playTone(620, 0.2);
   const pid = 'p_' + generateId(8);
@@ -548,6 +604,8 @@ function clearSession() {
   state.roomData = null;
   state.mySecret = null;
   state.roleRevealedLocally = false;
+  state.justiciarMode = false;
+  state.justiciarTargets = [];
   $('roomBadge').classList.add('hidden');
   $('leaveBtn').classList.add('hidden');
   $('spectatorBanner').classList.add('hidden');
@@ -597,6 +655,9 @@ function renderCurrentPhase() {
     case 'MISSION':
       renderMissionPhase(room, isHost);
       break;
+    case 'MONOCLE_POWER':
+      renderMonoclePhase(room, isHost);
+      break;
     case 'VOTING':
       renderVotingPhase(room);
       break;
@@ -615,10 +676,12 @@ function renderCurrentPhase() {
   }
 }
 
-// --- LOBBY (ANONIMA FINO A FINE PARTITA) ---
+// --- LOBBY (FINO A 15 GIOCATORI) ---
 function renderLobby(room, isHost) {
   showScreen('screen-lobby');
   state.roleRevealedLocally = false;
+  state.justiciarMode = false;
+  state.justiciarTargets = [];
   $('lobbyCodeDisplay').textContent = state.roomCode;
 
   const entries = Object.entries(room.players || {});
@@ -631,8 +694,10 @@ function renderLobby(room, isHost) {
     $('rolePreviewBadge').textContent = '1 Traditore (Modalità Blitz)';
   } else if (count <= 7) {
     $('rolePreviewBadge').textContent = '1 Traditore vs Fedeli';
-  } else {
+  } else if (count <= 11) {
     $('rolePreviewBadge').textContent = '2 Traditori (Modalità Complotto)';
+  } else {
+    $('rolePreviewBadge').textContent = '3 Traditori (Gran Consiglio)';
   }
 
   const list = $('lobbyPlayerList');
@@ -669,7 +734,10 @@ async function startGame() {
   if (ids.length < 3) return;
 
   const shuffled = [...ids].sort(() => Math.random() - 0.5);
-  const traitorCount = ids.length >= 8 ? 2 : 1;
+  let traitorCount = 1;
+  if (ids.length >= 12) traitorCount = 3;
+  else if (ids.length >= 8) traitorCount = 2;
+
   const traitorIds = shuffled.slice(0, traitorCount);
 
   const faithfulPool = [...FAITHFUL_PERSONAS].sort(() => Math.random() - 0.5);
@@ -704,9 +772,17 @@ async function startGame() {
 
   updates[`rooms/${state.roomCode}/meta/phase`] = 'ROLE_REVEAL';
   updates[`rooms/${state.roomCode}/meta/round`] = 1;
+  updates[`rooms/${state.roomCode}/meta/missionType`] = 'SHIELD';
   updates[`rooms/${state.roomCode}/meta/missionDeck`] = getShuffledMissionDeck();
   updates[`rooms/${state.roomCode}/meta/deckCursor`] = 0;
   updates[`rooms/${state.roomCode}/meta/missionEndsAt`] = null;
+  updates[`rooms/${state.roomCode}/meta/shieldWinnerId`] = null;
+  updates[`rooms/${state.roomCode}/meta/monocleWinnerId`] = null;
+  updates[`rooms/${state.roomCode}/meta/monocleResult`] = null;
+  updates[`rooms/${state.roomCode}/meta/justiciarWinnerId`] = null;
+  updates[`rooms/${state.roomCode}/meta/justiciarUsed`] = false;
+  updates[`rooms/${state.roomCode}/meta/winnerHeadline`] = null;
+  updates[`rooms/${state.roomCode}/meta/winnerSummary`] = null;
 
   await db.ref().update(updates);
 }
@@ -748,11 +824,12 @@ function renderRoleCard() {
   $('roleTitle').textContent = isTraitor ? 'SEI UN TRADITORE' : 'SEI UN FEDELE';
   $('roleDescription').textContent = isTraitor
     ? 'Inganna il gruppo alla Tavola Rotonda ed elimina i Fedeli durante la notte senza farti scoprire.'
-    : 'Rispondi alle missioni per lo Scudo, osserva i comportamenti ed esilia i Traditori.';
+    : 'Vinci le reliquie uniche nelle missioni, osserva i comportamenti ed esilia i Traditori.';
 
   const allyBox = $('fellowTraitorBox');
   if (isTraitor && state.mySecret.allies && state.mySecret.allies.length > 0) {
-    allyBox.textContent = `Il tuo complice segreto è: ${state.mySecret.allies.join(', ')}`;
+    const label = state.mySecret.allies.length > 1 ? 'I tuoi complici segreti sono' : 'Il tuo complice segreto è';
+    allyBox.textContent = `${label}: ${state.mySecret.allies.join(', ')}`;
     allyBox.classList.remove('hidden');
   } else {
     allyBox.classList.add('hidden');
@@ -767,12 +844,13 @@ async function checkAllPlayersReadyForMission() {
   if (players.every(p => p.ready)) {
     await db.ref(`rooms/${state.roomCode}/meta`).update({
       phase: 'MISSION',
+      missionType: 'SHIELD',
       missionEndsAt: Date.now() + MISSION_DURATION_MS
     });
   }
 }
 
-// --- MISSIONE SCUDO (30s TIMER) ---
+// --- MISSIONI UNICHE (ROUND 1: SCUDO, ROUND 2: CANNOCCHIALE, ROUND 3: GIUSTIZIERE) ---
 function getCurrentMission(room) {
   const deck = room.meta.missionDeck || getShuffledMissionDeck();
   const cursor = room.meta.deckCursor || 0;
@@ -784,6 +862,28 @@ function renderMissionPhase(room, isHost) {
   showScreen('screen-mission');
   const me = room.players[state.playerId];
   const mission = getCurrentMission(room);
+  const mType = room.meta.missionType || getMissionTypeForRound(room.meta.round) || 'SHIELD';
+
+  const relicImg = $('missionRelicImg');
+  if (mType === 'MONOCLE') {
+    relicImg.src = MONOCLE_IMG;
+    relicImg.alt = 'Cannocchiale';
+    $('missionEyebrow').innerHTML = `ROUND <span class="round-num">${room.meta.round}</span> • 2ª MISSIONE UNICA`;
+    $('missionPhaseTitle').textContent = 'Missione per il Monocolo';
+    $('missionPhaseSubtitle').textContent = '30 secondi: il più veloce vince il monocolo per spiare un abitante del regno.';
+  } else if (mType === 'JUSTICIAR') {
+    relicImg.src = JUSTICIAR_IMG;
+    relicImg.alt = 'Giustiziere';
+    $('missionEyebrow').innerHTML = `ROUND <span class="round-num">${room.meta.round}</span> • 3ª MISSIONE UNICA`;
+    $('missionPhaseTitle').textContent = 'Missione del Giustiziere';
+    $('missionPhaseSubtitle').textContent = '30 secondi: il vincitore ottiene il potere di accusare pubblicamente i Traditori.';
+  } else {
+    relicImg.src = SHIELD_IMG;
+    relicImg.alt = 'Scudo';
+    $('missionEyebrow').innerHTML = `ROUND <span class="round-num">${room.meta.round}</span> • 1ª MISSIONE UNICA`;
+    $('missionPhaseTitle').textContent = 'Missione per lo Scudo';
+    $('missionPhaseSubtitle').textContent = '30 secondi: rispondi bene e veloce per vincere lo Scudo segreto.';
+  }
 
   $('hostMissionNext').classList.toggle('hidden', !isHost);
   $('missionCategoryTag').textContent = mission.cat;
@@ -814,7 +914,7 @@ function renderMissionPhase(room, isHost) {
 
         $('missionFeedback').textContent = isCorrect
           ? 'Risposta esatta! Attendi gli altri giocatori...'
-          : 'Risposta errata! Nessun punto Scudo in questo round.';
+          : 'Risposta errata! Nessun punto reliquia in questo round.';
         $('missionFeedback').classList.remove('hidden');
 
         await db.ref(`rooms/${state.roomCode}/players/${state.playerId}/missionScore`).set(score);
@@ -862,7 +962,7 @@ async function handleMissionTimeout(isHost) {
   const me = state.roomData?.players?.[state.playerId];
   if (me && me.alive && !state.missionAnswered && (me.missionScore === null || me.missionScore === undefined)) {
     state.missionAnswered = true;
-    $('missionFeedback').textContent = 'Tempo scaduto! Nessun punto Scudo per questo round.';
+    $('missionFeedback').textContent = 'Tempo scaduto! Nessun punto reliquia in questo round.';
     $('missionFeedback').classList.remove('hidden');
     await db.ref(`rooms/${state.roomCode}/players/${state.playerId}/missionScore`).set(0);
   }
@@ -893,27 +993,175 @@ async function evaluateMissionCompletion(forceFinish = false) {
       }
     });
 
-    const updates = {};
-    Object.keys(room.players).forEach(id => {
-      updates[`rooms/${state.roomCode}/secrets/${id}/hasShield`] = (id === bestId);
-    });
-    updates[`rooms/${state.roomCode}/meta/shieldWinnerId`] = bestId;
-    updates[`rooms/${state.roomCode}/meta/missionEndsAt`] = null;
-    updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+    const mType = room.meta.missionType || 'SHIELD';
+    const updates = {
+      [`rooms/${state.roomCode}/meta/missionEndsAt`]: null
+    };
+
+    if (mType === 'SHIELD') {
+      Object.keys(room.players).forEach(id => {
+        updates[`rooms/${state.roomCode}/secrets/${id}/hasShield`] = (id === bestId);
+      });
+      updates[`rooms/${state.roomCode}/meta/shieldWinnerId`] = bestId;
+      updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+    } else if (mType === 'MONOCLE') {
+      updates[`rooms/${state.roomCode}/meta/monocleWinnerId`] = bestId;
+      updates[`rooms/${state.roomCode}/meta/monocleResult`] = null;
+      updates[`rooms/${state.roomCode}/meta/phase`] = bestId ? 'MONOCLE_POWER' : 'VOTING';
+    } else if (mType === 'JUSTICIAR') {
+      updates[`rooms/${state.roomCode}/meta/justiciarWinnerId`] = bestId;
+      updates[`rooms/${state.roomCode}/meta/justiciarUsed`] = false;
+      updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+    } else {
+      updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+    }
+
     await db.ref().update(updates);
   }
 }
 
-// --- TAVOLA ROTONDA CIRCOLARE & VOTO (ANONIMO) ---
+// --- POTERE DEL CANNOCCHIALE / MONOCOLO (ROUND 2) ---
+function renderMonoclePhase(room, isHost) {
+  showScreen('screen-monocle');
+  state.missionAnswered = false;
+  const isWinner = room.meta.monocleWinnerId === state.playerId;
+
+  if (isWinner) {
+    $('monocleWinnerView').classList.remove('hidden');
+    $('monocleWaitView').classList.add('hidden');
+
+    const result = room.meta.monocleResult;
+    if (result) {
+      $('monocleSelectBox').classList.add('hidden');
+      $('confirmMonocleBtn').classList.add('hidden');
+      $('monocleClueCard').classList.remove('hidden');
+      setContainerAvatar($('monocleTargetAvatar'), ANON_AVATAR, result.targetName);
+      $('monocleTargetName').textContent = `Hai spiato ${result.targetName}`;
+      $('monocleClueText').textContent = `“${result.clue}”`;
+      $('proceedFromMonocleBtn').classList.remove('hidden');
+    } else {
+      $('monocleSelectBox').classList.remove('hidden');
+      $('monocleClueCard').classList.add('hidden');
+      $('proceedFromMonocleBtn').classList.add('hidden');
+
+      const grid = $('monocleTargetGrid');
+      grid.innerHTML = '';
+      Object.entries(room.players || {}).forEach(([id, p]) => {
+        if (!p.alive || id === state.playerId) return;
+        const card = document.createElement('div');
+        card.className = `vote-card ${state.selectedMonocleTargetId === id ? 'selected' : ''}`;
+        card.innerHTML = `
+          <span class="vote-card-avatar">${renderAvatarHtml(ANON_AVATAR, p.name)}</span>
+          <span class="v-name">${escapeHtml(p.name)}</span>
+        `;
+        card.onclick = () => {
+          state.selectedMonocleTargetId = id;
+          playTone(520, 0.12);
+          renderMonoclePhase(room, isHost);
+        };
+        grid.appendChild(card);
+      });
+
+      const confirmBtn = $('confirmMonocleBtn');
+      confirmBtn.classList.remove('hidden');
+      confirmBtn.disabled = !state.selectedMonocleTargetId;
+    }
+  } else {
+    $('monocleWinnerView').classList.add('hidden');
+    $('monocleWaitView').classList.remove('hidden');
+    $('hostForceFromMonocle').classList.toggle('hidden', !isHost);
+  }
+}
+
+async function useMonoclePower() {
+  if (!state.selectedMonocleTargetId) return;
+  const targetId = state.selectedMonocleTargetId;
+  state.selectedMonocleTargetId = null;
+
+  const snap = await db.ref(`rooms/${state.roomCode}`).get();
+  const room = snap.val();
+  if (!room) return;
+
+  const targetPlayer = room.players[targetId];
+  const targetSecret = room.secrets?.[targetId];
+  const isTraitor = targetSecret?.role === 'TRAITOR';
+  const pool = isTraitor ? TRAITOR_SPY_CLUES : FAITHFUL_SPY_CLUES;
+  const clue = pool[Math.floor(Math.random() * pool.length)];
+
+  playTone(640, 0.3, 'triangle');
+  await db.ref(`rooms/${state.roomCode}/meta/monocleResult`).set({
+    targetId,
+    targetName: targetPlayer.name,
+    clue
+  });
+}
+
+// --- TAVOLA ROTONDA CIRCOLARE, VOTO & ACCUSA GIUSTIZIERE ---
+function getAliveTraitorsCount(room) {
+  let count = 0;
+  Object.entries(room.players || {}).forEach(([id, p]) => {
+    if (p.alive && room.secrets?.[id]?.role === 'TRAITOR') {
+      count++;
+    }
+  });
+  return Math.max(1, count);
+}
+
 function renderVotingPhase(room) {
   showScreen('screen-voting');
   state.missionAnswered = false;
   const me = room.players[state.playerId];
 
+  // Banner Scudo (Round 1)
   if (state.mySecret && state.mySecret.hasShield && me.alive) {
     $('shieldStatusBanner').classList.remove('hidden');
   } else {
     $('shieldStatusBanner').classList.add('hidden');
+  }
+
+  // Promemoria indizio Monocolo per chi lo ha vinto al Round 2
+  const monocleReminder = $('monocleReminderBanner');
+  if (room.meta.monocleWinnerId === state.playerId && room.meta.monocleResult && me.alive) {
+    $('monocleReminderText').textContent = `Monocolo su ${room.meta.monocleResult.targetName}: “${room.meta.monocleResult.clue}”`;
+    monocleReminder.classList.remove('hidden');
+  } else {
+    monocleReminder.classList.add('hidden');
+  }
+
+  // Pannello potere unico del Giustiziere (vinto al Round 3)
+  const canUseJusticiar =
+    room.meta.justiciarWinnerId === state.playerId &&
+    !room.meta.justiciarUsed &&
+    me.alive &&
+    !me.votedFor;
+
+  const justiciarPanel = $('justiciarPanel');
+  if (canUseJusticiar) {
+    justiciarPanel.classList.remove('hidden');
+    const requiredTargets = getAliveTraitorsCount(room);
+    $('justiciarDesc').textContent = requiredTargets === 1
+      ? "C'è 1 Traditore rimasto nel regno. Puoi accusarlo pubblicamente: se indovini vinci subito, se sbagli vieni squalificato!"
+      : `Ci sono ${requiredTargets} Traditori rimasti nel regno. Se li accusi tutti correttamente vinci subito, ma se sbagli anche un solo nome vieni squalificato!`;
+
+    const toggleBtn = $('toggleJusticiarModeBtn');
+    toggleBtn.textContent = state.justiciarMode
+      ? 'Torna al Voto Normale'
+      : `Attiva Accusa Giustiziere (${requiredTargets} ${requiredTargets === 1 ? 'nome' : 'nomi'})`;
+  } else {
+    justiciarPanel.classList.add('hidden');
+    state.justiciarMode = false;
+    state.justiciarTargets = [];
+  }
+
+  const requiredTargets = getAliveTraitorsCount(room);
+  if (state.justiciarMode) {
+    $('votingMainTitle').textContent = 'Accusa del Giustiziere';
+    $('votingInstructionText').textContent = requiredTargets === 1
+      ? 'Seleziona l’unico Traditore che hai smascherato (rischio squalifica):'
+      : `Seleziona tutti e ${requiredTargets} i Traditori rimasti (se ne sbagli 1 sei squalificato):`;
+  } else {
+    $('votingMainTitle').textContent = 'Chi vuoi esiliare?';
+    $('votingInstructionText').textContent = 'Discutete a voce, poi tocca il giocatore che vuoi esiliare:';
   }
 
   const aliveEntries = Object.entries(room.players || {}).filter(([, p]) => p.alive);
@@ -925,7 +1173,7 @@ function renderVotingPhase(room) {
   grid.innerHTML = '';
 
   const totalSeats = votableEntries.length;
-  const radiusPercent = totalSeats <= 4 ? 38 : 40;
+  const radiusPercent = totalSeats <= 6 ? 38 : (totalSeats <= 10 ? 40 : 42);
 
   votableEntries.forEach(([id, p], index) => {
     const angle = (-Math.PI / 2) + (index * (2 * Math.PI)) / Math.max(totalSeats, 1);
@@ -934,8 +1182,16 @@ function renderVotingPhase(room) {
 
     const btn = document.createElement('button');
     btn.type = 'button';
-    const currentSelected = me.votedFor || state.selectedVoteId;
-    btn.className = `table-seat ${currentSelected === id ? 'selected' : ''}`;
+
+    let isSelected = false;
+    if (state.justiciarMode) {
+      isSelected = state.justiciarTargets.includes(id);
+    } else {
+      const currentSelected = me.votedFor || state.selectedVoteId;
+      isSelected = currentSelected === id;
+    }
+
+    btn.className = `table-seat ${isSelected ? 'selected' : ''}`;
     btn.style.setProperty('--x', `${xPct.toFixed(1)}%`);
     btn.style.setProperty('--y', `${yPct.toFixed(1)}%`);
 
@@ -949,8 +1205,20 @@ function renderVotingPhase(room) {
 
     if (me.alive && !me.votedFor) {
       btn.onclick = () => {
-        state.selectedVoteId = id;
-        playTone(460, 0.1);
+        if (state.justiciarMode) {
+          if (state.justiciarTargets.includes(id)) {
+            state.justiciarTargets = state.justiciarTargets.filter(tid => tid !== id);
+          } else {
+            if (state.justiciarTargets.length >= requiredTargets) {
+              state.justiciarTargets.shift();
+            }
+            state.justiciarTargets.push(id);
+          }
+          playTone(340, 0.12, 'triangle');
+        } else {
+          state.selectedVoteId = id;
+          playTone(460, 0.1);
+        }
         renderVotingPhase(room);
       };
     }
@@ -964,9 +1232,75 @@ function renderVotingPhase(room) {
   } else if (me.votedFor) {
     voteBtn.disabled = true;
     voteBtn.textContent = 'Voto Registrato ✓';
+  } else if (state.justiciarMode) {
+    const readyToAccuse = state.justiciarTargets.length === requiredTargets;
+    voteBtn.disabled = !readyToAccuse;
+    voteBtn.textContent = readyToAccuse
+      ? 'Lancia Accusa Pubblica!'
+      : `Seleziona ${requiredTargets} ${requiredTargets === 1 ? 'sospetto' : 'sospetti'} (${state.justiciarTargets.length}/${requiredTargets})`;
   } else {
     voteBtn.disabled = !state.selectedVoteId;
     voteBtn.textContent = 'Conferma Voto';
+  }
+}
+
+async function submitJusticiarAccusation() {
+  const snap = await db.ref(`rooms/${state.roomCode}`).get();
+  const room = snap.val();
+  if (!room || room.meta.phase !== 'VOTING') return;
+
+  const accusedIds = [...state.justiciarTargets];
+  const aliveTraitorIds = Object.entries(room.players || {})
+    .filter(([id, p]) => p.alive && room.secrets?.[id]?.role === 'TRAITOR')
+    .map(([id]) => id);
+
+  if (accusedIds.length !== aliveTraitorIds.length || aliveTraitorIds.length === 0) return;
+
+  state.justiciarMode = false;
+  state.justiciarTargets = [];
+
+  const allCorrect = accusedIds.every(id => aliveTraitorIds.includes(id));
+  const accuser = room.players[state.playerId];
+  const updates = {
+    [`rooms/${state.roomCode}/meta/justiciarUsed`]: true
+  };
+
+  if (allCorrect) {
+    const capturedCount = accusedIds.length;
+    const dramaticHeadline = capturedCount === 1
+      ? 'Complimenti! Il traditore è stato catturato: il regno è salvo.'
+      : 'Complimenti! I traditori sono stati catturati: il regno è salvo.';
+
+    const capturedNames = accusedIds.map(id => room.players[id]?.name || 'Traditore').join(', ');
+    accusedIds.forEach(id => {
+      updates[`rooms/${state.roomCode}/players/${id}/alive`] = false;
+    });
+
+    updates[`rooms/${state.roomCode}/meta/winner`] = 'FAITHFUL';
+    updates[`rooms/${state.roomCode}/meta/winnerHeadline`] = dramaticHeadline;
+    updates[`rooms/${state.roomCode}/meta/winnerSummary`] = `${accuser.name}, nel ruolo di Giustiziere, ha smascherato pubblicamente ${capturedNames}!`;
+    updates[`rooms/${state.roomCode}/meta/phase`] = 'GAME_OVER';
+
+    playTone(720, 0.45, 'triangle');
+    await db.ref().update(updates);
+  } else {
+    // Squalifica immediata del Giustiziere per accusa errata
+    updates[`rooms/${state.roomCode}/players/${state.playerId}/alive`] = false;
+    Object.keys(room.players).forEach(id => {
+      updates[`rooms/${state.roomCode}/players/${id}/votedFor`] = null;
+    });
+    updates[`rooms/${state.roomCode}/meta/exiledInfo`] = {
+      tie: false,
+      justiciarFailed: true,
+      id: state.playerId,
+      name: accuser.name,
+      avatar: JUSTICIAR_IMG
+    };
+    updates[`rooms/${state.roomCode}/meta/phase`] = 'EXILE';
+
+    playTone(170, 0.45, 'sawtooth');
+    await db.ref().update(updates);
+    checkWinConditions();
   }
 }
 
@@ -1031,7 +1365,7 @@ async function resolveRoundTableVotes(room, aliveEntries) {
   checkWinConditions();
 }
 
-// --- ESILIO (RUOLO SEGRETO FINO A FINE PARTITA) ---
+// --- ESILIO / ESITO GIUSTIZIERE ---
 function renderExilePhase(room, isHost) {
   showScreen('screen-exile');
   const info = room.meta.exiledInfo;
@@ -1040,12 +1374,20 @@ function renderExilePhase(room, isHost) {
   setContainerAvatar($('exileAvatar'), info.avatar || ANON_AVATAR, info.name || 'Esiliato');
   const badge = $('exileRoleReveal');
 
-  if (info.tie) {
+  if (info.justiciarFailed) {
+    $('exileEyebrow').textContent = 'VERDETTO DEL GIUSTIZIERE';
+    $('exileAnnouncement').textContent = `${info.name} è stato squalificato!`;
+    badge.textContent = 'ACCUSA PUBBLICA FALLITA';
+    badge.className = 'revealed-role-pill';
+    $('exileSubtext').textContent = 'Ha accusato almeno un innocente alla Tavola Rotonda ed è stato espulso dal regno.';
+  } else if (info.tie) {
+    $('exileEyebrow').textContent = 'VERDETTO DELLA TAVOLA ROTONDA';
     $('exileAnnouncement').textContent = 'Nessun Esilio!';
     badge.textContent = 'PARITÀ ALLA TAVOLA ROTONDA';
     badge.className = 'revealed-role-pill';
     $('exileSubtext').textContent = 'Il gruppo non ha raggiunto una maggioranza. Nessuno lascia il gioco.';
   } else {
+    $('exileEyebrow').textContent = 'VERDETTO DELLA TAVOLA ROTONDA';
     $('exileAnnouncement').textContent = `${info.name} è stato esiliato`;
     badge.textContent = 'RUOLO SEGRETO FINO A FINE PARTITA';
     badge.className = 'revealed-role-pill';
@@ -1214,19 +1556,28 @@ async function startNextRound() {
   const room = state.roomData;
   const nextRound = room.meta.round + 1;
   const nextCursor = (room.meta.deckCursor || 0) + 1;
+  const nextMissionType = getMissionTypeForRound(nextRound);
 
   const updates = {
     [`rooms/${state.roomCode}/meta/round`]: nextRound,
     [`rooms/${state.roomCode}/meta/deckCursor`]: nextCursor,
     [`rooms/${state.roomCode}/meta/shieldWinnerId`]: null,
-    [`rooms/${state.roomCode}/meta/missionEndsAt`]: Date.now() + MISSION_DURATION_MS,
-    [`rooms/${state.roomCode}/meta/phase`]: 'MISSION'
+    [`rooms/${state.roomCode}/meta/missionType`]: nextMissionType
   };
 
   Object.keys(room.players).forEach(id => {
     updates[`rooms/${state.roomCode}/players/${id}/missionScore`] = null;
     updates[`rooms/${state.roomCode}/secrets/${id}/hasShield`] = false;
   });
+
+  if (nextMissionType) {
+    updates[`rooms/${state.roomCode}/meta/missionEndsAt`] = Date.now() + MISSION_DURATION_MS;
+    updates[`rooms/${state.roomCode}/meta/phase`] = 'MISSION';
+  } else {
+    // Tutte e 3 le missioni uniche sono già state giocate: si passa subito alla Tavola Rotonda
+    updates[`rooms/${state.roomCode}/meta/missionEndsAt`] = null;
+    updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+  }
 
   await db.ref().update(updates);
 }
@@ -1269,10 +1620,12 @@ function renderGameOverPhase(room, isHost) {
   const faithfulWon = room.meta.winner === 'FAITHFUL';
 
   $('winnerIcon').textContent = faithfulWon ? '👑' : '🗡️';
-  $('winnerHeadline').textContent = faithfulWon ? 'VINCONO I FEDELI!' : 'VINCONO I TRADITORI!';
-  $('winnerSummary').textContent = faithfulWon
-    ? 'Tutti i Traditori sono stati eliminati.'
-    : 'I Traditori hanno raggiunto la parità numerica e preso il controllo.';
+  $('winnerHeadline').textContent = room.meta.winnerHeadline
+    || (faithfulWon ? 'VINCONO I FEDELI!' : 'VINCONO I TRADITORI!');
+  $('winnerSummary').textContent = room.meta.winnerSummary
+    || (faithfulWon
+      ? 'Tutti i Traditori sono stati eliminati.'
+      : 'I Traditori hanno raggiunto la parità numerica e preso il controllo.');
 
   const list = $('finalRolesList');
   list.innerHTML = '';
@@ -1304,11 +1657,18 @@ async function resetToLobby() {
   const updates = {
     [`rooms/${state.roomCode}/meta/phase`]: 'LOBBY',
     [`rooms/${state.roomCode}/meta/round`]: 1,
+    [`rooms/${state.roomCode}/meta/missionType`]: 'SHIELD',
     [`rooms/${state.roomCode}/meta/missionEndsAt`]: null,
     [`rooms/${state.roomCode}/meta/shieldWinnerId`]: null,
+    [`rooms/${state.roomCode}/meta/monocleWinnerId`]: null,
+    [`rooms/${state.roomCode}/meta/monocleResult`]: null,
+    [`rooms/${state.roomCode}/meta/justiciarWinnerId`]: null,
+    [`rooms/${state.roomCode}/meta/justiciarUsed`]: false,
     [`rooms/${state.roomCode}/meta/exiledInfo`]: null,
     [`rooms/${state.roomCode}/meta/morningInfo`]: null,
     [`rooms/${state.roomCode}/meta/winner`]: null,
+    [`rooms/${state.roomCode}/meta/winnerHeadline`]: null,
+    [`rooms/${state.roomCode}/meta/winnerSummary`]: null,
     [`rooms/${state.roomCode}/secrets`]: null
   };
 
@@ -1321,4 +1681,4 @@ async function resetToLobby() {
   });
 
   await db.ref().update(updates);
-}
+                  }
