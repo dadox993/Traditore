@@ -77,6 +77,20 @@ function playTone(freq = 440, duration = 0.25, type = 'sine') {
   } catch (e) { /* Ignora restrizioni autoplay */ }
 }
 
+function playCueSound(cueType) {
+  if (!soundEnabled) return;
+  if (cueType === 'JUSTICIAR_CHARGE') {
+    playTone(196, 0.22, 'sawtooth');
+    setTimeout(() => playTone(261.6, 0.34, 'triangle'), 160);
+  } else if (cueType === 'MORNING_SAFE') {
+    playTone(523.25, 0.2, 'sine');
+    setTimeout(() => playTone(659.25, 0.28, 'sine'), 140);
+  } else if (cueType === 'MORNING_VICTIM') {
+    playTone(220, 0.28, 'triangle');
+    setTimeout(() => playTone(164.8, 0.38, 'sawtooth'), 180);
+  }
+}
+
 // =======================================================
 // 3. MAZZO DI 200 MISSIONI UNICHE (BREVE, 1 RIGA)
 // =======================================================
@@ -307,7 +321,7 @@ function getMissionTypeForRound(round) {
 }
 
 // =======================================================
-// 4. STATO LOCALE E RICONNESSIONE
+// 4. STATO LOCALE, CHAT NON LETTI & RICONNESSIONE
 // =======================================================
 let state = {
   roomCode: localStorage.getItem('trd_room') || null,
@@ -320,6 +334,8 @@ let state = {
   roleRevealedLocally: false,
   missionAnswered: false,
   missionTimerInterval: null,
+  lastReadChatTs: Number(localStorage.getItem('trd_chat_ts') || 0),
+  lastMorningCueKey: null,
   roomRef: null,
   secretRef: null,
   roomData: null,
@@ -376,6 +392,15 @@ function generateId(len = 6) {
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+async function appendChronicleEvent(round, text) {
+  if (!state.roomCode || !text) return;
+  await db.ref(`rooms/${state.roomCode}/chronicle`).push({
+    round: round || 1,
+    text,
+    ts: Date.now()
+  });
 }
 
 // =======================================================
@@ -448,7 +473,11 @@ document.addEventListener('DOMContentLoaded', () => {
     state.justiciarMode = !state.justiciarMode;
     state.selectedVoteId = null;
     state.justiciarTargets = [];
-    playTone(state.justiciarMode ? 240 : 480, 0.18, 'triangle');
+    if (state.justiciarMode) {
+      playCueSound('JUSTICIAR_CHARGE');
+    } else {
+      playTone(480, 0.16, 'triangle');
+    }
     renderVotingPhase(state.roomData);
   });
 
@@ -466,6 +495,19 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       sendGeneralChat();
     }
+  });
+
+  $('generalChatMessages').addEventListener('scroll', () => {
+    const box = $('generalChatMessages');
+    if (box.scrollHeight - box.scrollTop - box.clientHeight < 36) {
+      markGeneralChatAsRead(state.roomData?.generalChat);
+    }
+  });
+
+  $('unreadChatBadge').addEventListener('click', () => {
+    const box = $('generalChatMessages');
+    markGeneralChatAsRead(state.roomData?.generalChat);
+    if (box) box.scrollTop = box.scrollHeight;
   });
 
   $('startNightBtn').addEventListener('click', () => {
@@ -614,6 +656,7 @@ function clearSession() {
   state.roleRevealedLocally = false;
   state.justiciarMode = false;
   state.justiciarTargets = [];
+  state.lastMorningCueKey = null;
   $('roomBadge').classList.add('hidden');
   $('leaveBtn').classList.add('hidden');
   $('spectatorBanner').classList.add('hidden');
@@ -690,6 +733,7 @@ function renderLobby(room, isHost) {
   state.roleRevealedLocally = false;
   state.justiciarMode = false;
   state.justiciarTargets = [];
+  state.lastMorningCueKey = null;
   $('lobbyCodeDisplay').textContent = state.roomCode;
 
   const entries = Object.entries(room.players || {});
@@ -792,8 +836,10 @@ async function startGame() {
   updates[`rooms/${state.roomCode}/meta/winnerHeadline`] = null;
   updates[`rooms/${state.roomCode}/meta/winnerSummary`] = null;
   updates[`rooms/${state.roomCode}/generalChat`] = null;
+  updates[`rooms/${state.roomCode}/chronicle`] = null;
 
   await db.ref().update(updates);
+  await appendChronicleEvent(1, 'La partita ha avuto inizio: i ruoli segreti sono stati assegnati.');
 }
 
 // --- RIVELAZIONE RUOLO & AVATAR ---
@@ -1002,6 +1048,7 @@ async function evaluateMissionCompletion(forceFinish = false) {
       }
     });
 
+    const winnerName = bestId ? room.players[bestId]?.name : null;
     const mType = room.meta.missionType || 'SHIELD';
     const updates = {
       [`rooms/${state.roomCode}/meta/missionEndsAt`]: null
@@ -1013,19 +1060,33 @@ async function evaluateMissionCompletion(forceFinish = false) {
       });
       updates[`rooms/${state.roomCode}/meta/shieldWinnerId`] = bestId;
       updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+      await db.ref().update(updates);
+      await appendChronicleEvent(
+        room.meta.round,
+        winnerName ? `${winnerName} ha vinto lo Scudo segreto.` : 'Nessuno ha conquistato lo Scudo nella missione.'
+      );
     } else if (mType === 'MONOCLE') {
       updates[`rooms/${state.roomCode}/meta/monocleWinnerId`] = bestId;
       updates[`rooms/${state.roomCode}/meta/monocleResult`] = null;
       updates[`rooms/${state.roomCode}/meta/phase`] = bestId ? 'MONOCLE_POWER' : 'VOTING';
+      await db.ref().update(updates);
+      await appendChronicleEvent(
+        room.meta.round,
+        winnerName ? `${winnerName} ha conquistato il Monocolo per spiare un abitante.` : 'Nessuno ha vinto il Monocolo.'
+      );
     } else if (mType === 'JUSTICIAR') {
       updates[`rooms/${state.roomCode}/meta/justiciarWinnerId`] = bestId;
       updates[`rooms/${state.roomCode}/meta/justiciarUsed`] = false;
       updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+      await db.ref().update(updates);
+      await appendChronicleEvent(
+        room.meta.round,
+        winnerName ? `${winnerName} ha ottenuto il potere del Giustiziere.` : 'Nessuno ha vinto il potere del Giustiziere.'
+      );
     } else {
       updates[`rooms/${state.roomCode}/meta/phase`] = 'VOTING';
+      await db.ref().update(updates);
     }
-
-    await db.ref().update(updates);
   }
 }
 
@@ -1116,11 +1177,35 @@ function getAliveTraitorsCount(room) {
   return Math.max(1, count);
 }
 
+function renderMissionWinnerBanner(room) {
+  const banner = $('missionWinnerBanner');
+  if (!banner) return;
+
+  const { round, shieldWinnerId, monocleWinnerId, justiciarWinnerId } = room.meta || {};
+  let text = '';
+
+  if (round === 1 && shieldWinnerId && room.players?.[shieldWinnerId]) {
+    text = `🛡️ Scudo assegnato a ${room.players[shieldWinnerId].name}`;
+  } else if (round === 2 && monocleWinnerId && room.players?.[monocleWinnerId]) {
+    text = `🔭 Monocolo assegnato a ${room.players[monocleWinnerId].name}`;
+  } else if (round === 3 && justiciarWinnerId && room.players?.[justiciarWinnerId]) {
+    text = `⚔️ Potere del Giustiziere a ${room.players[justiciarWinnerId].name}`;
+  }
+
+  if (text) {
+    banner.textContent = text;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
 function renderVotingPhase(room) {
   showScreen('screen-voting');
   state.missionAnswered = false;
   const me = room.players[state.playerId];
 
+  renderMissionWinnerBanner(room);
   renderGeneralChat(room.generalChat || {});
 
   if (state.mySecret && state.mySecret.hasShield && me.alive) {
@@ -1252,13 +1337,39 @@ function renderVotingPhase(room) {
   }
 }
 
+function markGeneralChatAsRead(chatObj) {
+  const messages = Object.values(chatObj || {});
+  if (messages.length === 0) return;
+  const maxTs = Math.max(...messages.map(m => Number(m.ts) || 0));
+  if (maxTs > state.lastReadChatTs) {
+    state.lastReadChatTs = maxTs;
+    localStorage.setItem('trd_chat_ts', String(maxTs));
+  }
+}
+
 function renderGeneralChat(chatObj) {
   const box = $('generalChatMessages');
+  const badge = $('unreadChatBadge');
   if (!box) return;
-  const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
-  box.innerHTML = '';
 
+  const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
   const messages = Object.values(chatObj || {});
+
+  if (wasNearBottom) {
+    markGeneralChatAsRead(chatObj);
+  }
+
+  const unreadCount = messages.filter(m => (Number(m.ts) || 0) > state.lastReadChatTs).length;
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = `${unreadCount} ${unreadCount === 1 ? 'nuovo' : 'nuovi'}`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  box.innerHTML = '';
   if (messages.length === 0) {
     box.innerHTML = `<div class="chat-msg"><span class="wait-note">Nessun messaggio ancora. Confrontatevi qui su chi votare!</span></div>`;
     return;
@@ -1274,6 +1385,8 @@ function renderGeneralChat(chatObj) {
 
   if (wasNearBottom || messages.length <= 2) {
     box.scrollTop = box.scrollHeight;
+    markGeneralChatAsRead(chatObj);
+    if (badge) badge.classList.add('hidden');
   }
 }
 
@@ -1286,15 +1399,18 @@ async function sendGeneralChat() {
   const me = state.roomData?.players?.[state.playerId];
   const senderName = me?.name || 'Giocatore';
   const isGhost = me ? !me.alive : false;
+  const nowTs = Date.now();
 
   input.value = '';
   playTone(540, 0.1);
+  state.lastReadChatTs = nowTs;
+  localStorage.setItem('trd_chat_ts', String(nowTs));
 
   await db.ref(`rooms/${state.roomCode}/generalChat`).push({
     from: senderName,
     text,
     isGhost,
-    ts: Date.now()
+    ts: nowTs
   });
 }
 
@@ -1337,6 +1453,7 @@ async function submitJusticiarAccusation() {
 
     playTone(720, 0.45, 'triangle');
     await db.ref().update(updates);
+    await appendChronicleEvent(room.meta.round, `${accuser.name} (Giustiziere) ha smascherato ${capturedNames}: vittoria dei Fedeli!`);
   } else {
     updates[`rooms/${state.roomCode}/players/${state.playerId}/alive`] = false;
     Object.keys(room.players).forEach(id => {
@@ -1353,6 +1470,7 @@ async function submitJusticiarAccusation() {
 
     playTone(170, 0.45, 'sawtooth');
     await db.ref().update(updates);
+    await appendChronicleEvent(room.meta.round, `${accuser.name} ha fallito l'accusa del Giustiziere ed è stato squalificato.`);
     checkWinConditions();
   }
 }
@@ -1389,12 +1507,15 @@ async function resolveRoundTableVotes(room, aliveEntries) {
   });
 
   const updates = {};
+  let chronicleText = '';
+
   if (topCandidates.length > 1) {
     updates[`rooms/${state.roomCode}/meta/exiledInfo`] = {
       tie: true,
       name: 'Parità di voti!',
       avatar: '⚖️'
     };
+    chronicleText = 'Tavola Rotonda terminata in parità: nessun esilio.';
   } else {
     const exiledId = topCandidates[0];
     const exiledPlayer = room.players[exiledId];
@@ -1406,6 +1527,7 @@ async function resolveRoundTableVotes(room, aliveEntries) {
       name: exiledPlayer.name,
       avatar: ANON_AVATAR
     };
+    chronicleText = `${exiledPlayer.name} è stato esiliato alla Tavola Rotonda.`;
   }
 
   Object.keys(room.players).forEach(id => {
@@ -1414,6 +1536,7 @@ async function resolveRoundTableVotes(room, aliveEntries) {
 
   updates[`rooms/${state.roomCode}/meta/phase`] = 'EXILE';
   await db.ref().update(updates);
+  await appendChronicleEvent(room.meta.round, chronicleText);
 
   checkWinConditions();
 }
@@ -1553,6 +1676,8 @@ async function submitNightAction() {
     [`rooms/${state.roomCode}/nightChat`]: null
   };
 
+  let chronicleText = '';
+
   if (isBlitzFirstNight) {
     updates[`rooms/${state.roomCode}/meta/morningInfo`] = {
       eliminated: false,
@@ -1560,6 +1685,7 @@ async function submitNightAction() {
       title: 'Notte di Avvertimento!',
       text: `I Traditori hanno lasciato un avvertimento a ${targetPlayer.name}, ma nella prima notte Blitz nessuno viene eliminato.`
     };
+    chronicleText = `Prima notte Blitz: avvertimento per ${targetPlayer.name}, nessuna eliminazione.`;
   } else if (protectedByShield) {
     updates[`rooms/${state.roomCode}/meta/morningInfo`] = {
       eliminated: false,
@@ -1567,6 +1693,7 @@ async function submitNightAction() {
       title: 'Nessuno è stato eliminato!',
       text: 'I Traditori hanno colpito nell’ombra, ma lo Scudo segreto ha salvato la vittima!'
     };
+    chronicleText = `Attacco notturno respinto dallo Scudo: nessuno eliminato all'alba.`;
   } else {
     updates[`rooms/${state.roomCode}/players/${targetId}/alive`] = false;
     updates[`rooms/${state.roomCode}/meta/morningInfo`] = {
@@ -1575,10 +1702,12 @@ async function submitNightAction() {
       title: `${targetPlayer.name} non si è svegliato`,
       text: 'Qualcuno è stato eliminato durante la notte. Il suo ruolo resterà segreto fino a fine partita.'
     };
+    chronicleText = `${targetPlayer.name} è stato eliminato durante la notte.`;
   }
 
   updates[`rooms/${state.roomCode}/meta/phase`] = 'MORNING';
   await db.ref().update(updates);
+  await appendChronicleEvent(room.meta.round, chronicleText);
   checkWinConditions();
 }
 
@@ -1587,6 +1716,12 @@ function renderMorningPhase(room, isHost) {
   showScreen('screen-morning');
   const info = room.meta.morningInfo;
   if (!info) return;
+
+  const cueKey = `${room.meta.round}_${info.title}_${info.eliminated ? '1' : '0'}`;
+  if (state.lastMorningCueKey !== cueKey) {
+    state.lastMorningCueKey = cueKey;
+    playCueSound(info.eliminated ? 'MORNING_VICTIM' : 'MORNING_SAFE');
+  }
 
   setContainerAvatar($('morningIcon'), info.icon, info.title || 'Alba');
   $('morningTitle').textContent = info.title;
@@ -1658,15 +1793,17 @@ async function checkWinConditions() {
       phase: 'GAME_OVER',
       winner: 'FAITHFUL'
     });
+    await appendChronicleEvent(room.meta.round, 'Tutti i Traditori sono stati eliminati: vincono i Fedeli!');
   } else if (aliveTraitors >= aliveFaithfuls) {
     await db.ref(`rooms/${state.roomCode}/meta`).update({
       phase: 'GAME_OVER',
       winner: 'TRAITOR'
     });
+    await appendChronicleEvent(room.meta.round, 'I Traditori hanno raggiunto la parità numerica e preso il regno.');
   }
 }
 
-// --- FINE PARTITA (RIVELAZIONE COMPLETA AVATAR + RUOLO) ---
+// --- FINE PARTITA (RIVELAZIONE COMPLETA AVATAR + RUOLO + CRONACA) ---
 function renderGameOverPhase(room, isHost) {
   showScreen('screen-gameover');
   const faithfulWon = room.meta.winner === 'FAITHFUL';
@@ -1701,6 +1838,22 @@ function renderGameOverPhase(room, isHost) {
     list.appendChild(li);
   });
 
+  const chronicleList = $('chronicleList');
+  if (chronicleList) {
+    chronicleList.innerHTML = '';
+    const events = Object.values(room.chronicle || {}).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    if (events.length === 0) {
+      chronicleList.innerHTML = `<li class="chronicle-item"><span class="wait-note">Nessun evento registrato.</span></li>`;
+    } else {
+      events.forEach(ev => {
+        const li = document.createElement('li');
+        li.className = 'chronicle-item';
+        li.innerHTML = `<span class="chronicle-round">Round ${escapeHtml(ev.round || 1)}</span> ${escapeHtml(ev.text)}`;
+        chronicleList.appendChild(li);
+      });
+    }
+  }
+
   $('hostGameOverControls').classList.toggle('hidden', !isHost);
 }
 
@@ -1722,7 +1875,8 @@ async function resetToLobby() {
     [`rooms/${state.roomCode}/meta/winnerHeadline`]: null,
     [`rooms/${state.roomCode}/meta/winnerSummary`]: null,
     [`rooms/${state.roomCode}/secrets`]: null,
-    [`rooms/${state.roomCode}/generalChat`]: null
+    [`rooms/${state.roomCode}/generalChat`]: null,
+    [`rooms/${state.roomCode}/chronicle`]: null
   };
 
   Object.keys(room.players || {}).forEach(id => {
@@ -1734,4 +1888,4 @@ async function resetToLobby() {
   });
 
   await db.ref().update(updates);
-        }
+}
