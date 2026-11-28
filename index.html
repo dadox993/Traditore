@@ -40,7 +40,7 @@
       <!-- 1. HOME / ACCESSO -->
       <section id="screen-home" class="screen active">
         <div class="hero-card">
-          <p class="eyebrow hero-eyebrow"><span>• GIOCO DI DEDUZIONE E INGANNO •</span><br/>3–10 GIOCATORI</p>
+          <p class="eyebrow hero-eyebrow"><span>• GIOCO DI DEDUZIONE E INGANNO •</span><br/>3–15 GIOCATORI</p>
           <h1>Fidati di nessuno.<br/>Sopravvivi alla notte.</h1>
           <p class="subtitle">Collegatevi tutti dal vostro smartphone. Scoprite chi si nasconde nell'ombra prima che sia troppo tardi.</p>
         </div>
@@ -70,7 +70,7 @@
 
         <div class="card">
           <div class="section-head">
-            <h3>Giocatori Connessi (<span id="playerCount">0</span>/10)</h3>
+            <h3>Giocatori Connessi (<span id="playerCount">0</span>/15)</h3>
             <span class="pill" id="rolePreviewBadge">In attesa...</span>
           </div>
           <ul id="lobbyPlayerList" class="player-list"></ul>
@@ -115,12 +115,15 @@
         </div>
       </section>
 
-      <!-- 4. MISSIONE SCUDO -->
+      <!-- 4. MISSIONE UNICA DEL ROUND -->
       <section id="screen-mission" class="screen">
         <div class="phase-header">
-          <span class="eyebrow">ROUND <span class="round-num">1</span> • PROVA IMMUNITÀ</span>
-          <h2>Missione per lo Scudo</h2>
-          <p class="subtitle">30 secondi: rispondi bene e veloce per vincere lo Scudo segreto.</p>
+          <span id="missionEyebrow" class="eyebrow">ROUND <span class="round-num">1</span> • MISSIONE UNICA</span>
+          <div class="mission-relic-preview">
+            <img id="missionRelicImg" src="shield_3d.jpg" alt="Reliquia" class="mission-relic-img" />
+          </div>
+          <h2 id="missionPhaseTitle">Missione per lo Scudo</h2>
+          <p id="missionPhaseSubtitle" class="subtitle">30 secondi: rispondi bene e veloce per vincere lo Scudo segreto.</p>
         </div>
 
         <div class="card mission-card">
@@ -137,23 +140,85 @@
         </div>
 
         <div id="hostMissionNext" class="sticky-footer hidden">
-          <button id="advanceToVotingBtn" class="btn btn-outline">Passa subito alla Tavola Rotonda</button>
+          <button id="advanceToVotingBtn" class="btn btn-outline">Passa subito alla fase successiva</button>
         </div>
       </section>
 
-      <!-- 5. TAVOLA ROTONDA (DISCUSSIONE E VOTO) -->
+      <!-- 4B. POTERE DEL CANNOCCHIALE / MONOCOLO (SOLO ROUND 2) -->
+      <section id="screen-monocle" class="screen">
+        <div id="monocleWinnerView" class="hidden">
+          <div class="phase-header">
+            <span class="eyebrow">RELIQUIA UNICA CONQUISTATA</span>
+            <div class="relic-hero-box">
+              <img src="cannocchiale.jpg" alt="Cannocchiale" class="relic-hero-img" />
+            </div>
+            <h2>Occhio del Regno</h2>
+            <p class="subtitle">Complimenti, hai vinto il monocolo, quale abitante del regno vorresti spiare?</p>
+          </div>
+
+          <div id="monocleSelectBox" class="card">
+            <div id="monocleTargetGrid" class="vote-grid"></div>
+          </div>
+
+          <div id="monocleClueCard" class="card reveal-card monocle-clue-card hidden">
+            <span class="eyebrow">VISIONE ATTRAVERSO LA LENTE</span>
+            <div id="monocleTargetAvatar" class="big-avatar"></div>
+            <h3 id="monocleTargetName">---</h3>
+            <p id="monocleClueText" class="monocle-clue-text">---</p>
+            <p class="wait-note">Custodisci questo indizio: ti servirà alla Tavola Rotonda.</p>
+          </div>
+
+          <div class="sticky-footer">
+            <button id="confirmMonocleBtn" class="btn btn-gold" disabled>Spia Abitante</button>
+            <button id="proceedFromMonocleBtn" class="btn btn-gold hidden">Vai alla Tavola Rotonda</button>
+          </div>
+        </div>
+
+        <div id="monocleWaitView" class="hidden">
+          <div class="card reveal-card">
+            <span class="eyebrow">MISSIONE DEL MONOCOLO COMPLETATA</span>
+            <div class="big-avatar">
+              <img src="cannocchiale.jpg" alt="Cannocchiale" class="avatar-img" />
+            </div>
+            <h2>Qualcuno sta scrutando il regno...</h2>
+            <p id="monocleWaitSubtitle" class="subtitle">Il vincitore della prova sta osservando nell'ombra un abitante del regno. Preparatevi alla Tavola Rotonda.</p>
+          </div>
+          <div id="hostForceFromMonocle" class="sticky-footer hidden">
+            <button id="forceVotingFromMonocleBtn" class="btn btn-outline">Apri subito la Tavola Rotonda</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. TAVOLA ROTONDA (DISCUSSIONE, VOTO E ACCUSA GIUSTIZIERE) -->
       <section id="screen-voting" class="screen">
         <div class="phase-header">
           <span class="eyebrow">ROUND <span class="round-num">1</span> • TAVOLA ROTONDA</span>
-          <h2>Chi vuoi esiliare?</h2>
+          <h2 id="votingMainTitle">Chi vuoi esiliare?</h2>
+
           <p id="shieldStatusBanner" class="shield-banner hidden">
             <img src="shield_3d.jpg" alt="Scudo" class="shield-inline-img" />
             <span>Hai vinto lo Scudo! Stanotte sei protetto.</span>
           </p>
+
+          <div id="monocleReminderBanner" class="monocle-reminder hidden">
+            <img src="cannocchiale.jpg" alt="Monocolo" class="shield-inline-img" />
+            <span id="monocleReminderText"></span>
+          </div>
+
+          <div id="justiciarPanel" class="justiciar-panel hidden">
+            <div class="justiciar-panel-head">
+              <img src="giustiziere.jpg" alt="Giustiziere" class="justiciar-thumb" />
+              <div>
+                <span class="eyebrow text-crimson">POTERE UNICO DEL GIUSTIZIERE</span>
+                <p id="justiciarDesc" class="justiciar-desc">Puoi lanciare un'accusa pubblica indicando i Traditori rimasti. Se sbagli anche un solo nome, sarai squalificato!</p>
+              </div>
+            </div>
+            <button id="toggleJusticiarModeBtn" type="button" class="btn btn-small btn-crimson">Attiva Accusa Pubblica</button>
+          </div>
         </div>
 
         <div class="card round-table-card">
-          <p class="instruction-text">Discutete a voce, poi tocca il giocatore che vuoi esiliare:</p>
+          <p id="votingInstructionText" class="instruction-text">Discutete a voce, poi tocca il giocatore che vuoi esiliare:</p>
           <div id="roundTableArena" class="round-table-arena">
             <div class="round-table-center">
               <img src="tavolorotondo.jpg" alt="Tavola Rotonda" class="round-table-img" />
@@ -168,13 +233,13 @@
         </div>
       </section>
 
-      <!-- 6. ESILIO -->
+      <!-- 6. ESILIO / ESITO GIUSTIZIERE -->
       <section id="screen-exile" class="screen">
         <div class="card reveal-card">
-          <span class="eyebrow">VERDETTO DELLA TAVOLA ROTONDA</span>
+          <span id="exileEyebrow" class="eyebrow">VERDETTO DELLA TAVOLA ROTONDA</span>
           <div id="exileAvatar" class="big-avatar">🎭</div>
           <h2 id="exileAnnouncement">---</h2>
-          <div id="exileRoleReveal" class="revealed-role-pill">IDENTITÀ SEGRETA FINO ALLA FINE</div>
+          <div id="exileRoleReveal" class="revealed-role-pill">IDENTITÀ SEGRETA FINO A FINE PARTITA</div>
           <p id="exileSubtext" class="subtitle"></p>
         </div>
 
